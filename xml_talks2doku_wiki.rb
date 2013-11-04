@@ -1,23 +1,27 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
-require 'open-uri'
-require 'nokogiri'
+require 'rexml/document'
+require 'net/http'
 
-xml_data = Nokogiri::XML(open("https://hannover.ccc.de/frab/en/hackover13/public/schedule.xml"))
+url          = URI.parse('https://hannover.ccc.de/frab/en/hackover13/public/schedule.xml')
+http         = Net::HTTP.new(url.host, url.port)
+http.use_ssl = (url.scheme == 'https')
+response     = http.start {|http| http.request( Net::HTTP::Get.new(url.path) )}
 
-conference = xml_data.xpath('//conference/title').text
-days       = xml_data.xpath('//*/day')
+xml_data   = REXML::Document.new( response.body )
+conference = REXML::XPath.first(xml_data, '//conference/title').text
+days       = REXML::XPath.match(xml_data, '//*/day')
 
 puts "~~NOTOC~~"
 puts
 puts "= #{conference}"
 
 days.each do |day|
-  puts "== #{day[:date]}"
+  puts "== #{day.attribute(:date).value}"
   puts "^ ID ^ Slug ^ h264 ^ webm ^ opus ^ mp3  ^ Comment ^"
 
-  day.xpath('./*/event').each do |event|
-    puts "| #{event[:id]} | #{event.at_xpath('slug').text.gsub(':', '_')} | | | | | |"
+  day.get_elements('./*/event').each do |event|
+    puts "| #{event.attribute(:id).value} | #{event.get_elements('slug').last.text.gsub(':', '_')} | | | | | |"
   end
 end
