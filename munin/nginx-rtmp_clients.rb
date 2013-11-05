@@ -19,9 +19,15 @@ def parse_stat_xml(url)
 end
 
 def get_clients
+  all = 0
+
   URLS.each_with_index do |url, index|
-    puts "#{index}.value #{parse_stat_xml(url)}"
+    count = parse_stat_xml(url)
+    puts "#{index}.value #{count}"
+    all += count
   end
+
+  puts "all.value #{all}"
 end
 
 # show config
@@ -29,6 +35,7 @@ def show_config
   puts "graph_title Nginx rtmp clients count"
   puts 'graph_category nginx'
   puts 'graph_vlabel Count'
+  puts 'all.label all'
   URLS.each_with_index do |url, index|
     puts "#{index}.label #{URI.parse(url).host}"
   end
