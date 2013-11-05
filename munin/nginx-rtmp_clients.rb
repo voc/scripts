@@ -35,10 +35,10 @@ def show_config
 end
 
 
-if ENV['urls'].size == 0
+if ENV['urls'].nil?
   puts "Configure urls:"
   puts "  [nginx-nrpe_*]"
-  puts "    env.urls = http://example.com/stats/stat.xsl,http://exam.ple/stats/stat.xsl"
+  puts "    env.urls = http://example.com/stats,http://exam.ple/stats"
   exit 1
 else
   URLS = ENV['urls'].split(',')
