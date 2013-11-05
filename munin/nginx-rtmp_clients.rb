@@ -30,7 +30,7 @@ def show_config
   puts 'graph_category nginx'
   puts 'graph_vlabel Count'
   URLS.each_with_index do |url, index|
-    puts "#{index}.label #{url}"
+    puts "#{index}.label #{URI.parse(url).host}"
   end
 end
 
@@ -38,7 +38,7 @@ end
 if ENV['urls'].nil?
   puts "Configure urls:"
   puts "  [nginx-nrpe_*]"
-  puts "    env.urls = http://example.com/stats,http://exam.ple/stats"
+  puts "    env.urls http://example.com/stats,http://exam.ple/stats"
   exit 1
 else
   URLS = ENV['urls'].split(',')
