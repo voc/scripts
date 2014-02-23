@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 import urllib.request
 import sys
 
-schedule_url = "https://hannover.ccc.de/frab/en/hackover13/public/schedule.xml" 
+schedule_url = "ADD URL HERE" 
 print( "## getting meta data from " + schedule_url + " ##")
 global frab_data
 try:
