@@ -103,6 +103,7 @@ def parse_gitolite_config
     # HOOKS
     when /^\s*config\shooks\.run/
       line.sub!(/config\shooks.run\s*\=/, '')
+
       current_repos.each do |repo|
         @repos[repo][:hooks] = line.split(' ')
       end
@@ -146,8 +147,11 @@ def insert_into_original(content)
       new_content << con
       new_content << "" # newline
       new_content << "=== Gruppen"
+      new_content << "" # newline
       new_content << groups_to_dokuwiki_table(@groups)
+      new_content << "" # newline
       new_content << "=== Repositories"
+      new_content << "" # newline
       new_content << repositories_to_dokuwiki_table(@repos)
       new_content << "" # newline
     else
