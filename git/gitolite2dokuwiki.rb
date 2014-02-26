@@ -93,7 +93,7 @@ def parse_gitolite_config
 
       prev_line = { type: 'permission', content: line }
     # COMMENTS
-    when /^\s+\#/
+    when /^\s*\#/
       line.gsub!('#', '')
       comments_to_repo << line.strip
 
