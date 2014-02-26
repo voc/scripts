@@ -34,7 +34,7 @@ end
 # @param [Hash]
 # @return [Array]
 def repositories_to_dokuwiki_table(repositories)
-  table = [ "^ Name ^ Berechtigungen ^ Kommentare ^" ]
+  table = [ "^ Name ^ Berechtigungen ^ Hooks ^ Kommentare ^" ]
 
   repositories.keys.sort.each do |repo|
     line = ''
@@ -44,6 +44,8 @@ def repositories_to_dokuwiki_table(repositories)
     line << "read-write: #{repositories[repo][:write_access].map{ |u| "''#{u}''"}.join(', ')}\\\\ "
     # read permissions
     line <<  "read: #{repositories[repo][:read_access].map{ |u| "''#{u}''"}.join(', ')} | "
+    # hooks
+    line << "#{repositories[repo][:hooks].sort.map{ |h| "''#{h}''"}.join(', ')} | "
     # comment
     line << "#{repositories[repo][:comment].join(' ')} |"
 
@@ -98,6 +100,12 @@ def parse_gitolite_config
       comments_to_repo << line.strip
 
       prev_line = { type: 'comment', content: line }
+    # HOOKS
+    when /^\s*config\shooks\.run/
+      line.sub!(/config\shooks.run\s*\=/, '')
+      current_repos.each do |repo|
+        @repos[repo][:hooks] = line.split(' ')
+      end
     else
       next
     end
