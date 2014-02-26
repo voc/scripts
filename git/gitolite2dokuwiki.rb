@@ -22,8 +22,8 @@ GITOLITE_CONFIG = Pathname.new(Pathname.pwd + 'examples/gitolite.conf')
 def groups_to_dokuwiki_table(groups)
   table = [ "^ Gruppen Name ^ Mitglieder ^" ]
 
-  groups.keys.each do |group|
-    table << "| #{group} | #{groups[group][:users].map{ |u| "''#{u}''" }.join(', ') } |"
+  groups.keys.sort.each do |group|
+    table << "| #{group} | #{groups[group][:users].sort.map{ |u| "''#{u}''" }.join(', ') } |"
   end
 
   table
