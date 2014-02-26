@@ -43,16 +43,31 @@ def repositories_to_dokuwiki_table(repositories)
     # read-write permissions
     line << "read-write: #{repositories[repo][:write_access].map{ |u| "''#{u}''"}.join(', ')}\\\\ "
     # read permissions
-    line <<  "read: #{repositories[repo][:read_access].map{ |u| "''#{u}''"}.join(', ')} | "
+    line << "read: #{repositories[repo][:read_access].map{ |u| "''#{u}''"}.join(', ')} | "
     # hooks
     line << "#{repositories[repo][:hooks].sort.map{ |h| "''#{h}''"}.join(', ')} | "
     # comment
     line << "#{repositories[repo][:comment].join(' ')} |"
 
-    table << line
+    table << add_color(line, repositories[repo][:public])
   end
 
   table
+end
+
+def add_color(line, public_status)
+  color = ''
+
+  case public_status
+    when /github/
+      color = '@lightgreen:'
+    when /http/
+      color = '@lightsalmon:'
+    else
+      color = '@lightcoral:'
+  end
+
+  line.gsub!('| ', "| #{color}")
 end
 
 # Parse gitolite gitolite.conf file.
@@ -67,7 +82,7 @@ def parse_gitolite_config
     when /repo/
       repos = line.split(' ') - ['repo']
       repos.each do |repo|
-        @repos[repo] = { read_access: [], write_access: [], hooks: [], comment: comments_to_repo }
+        @repos[repo] = { read_access: [], write_access: [], hooks: [], comment: comments_to_repo, public: 'false' }
       end
 
       prev_line     = { type: 'repo', content: line }
@@ -84,6 +99,10 @@ def parse_gitolite_config
     when /^\s+R\s/
       current_repos.each do |repo|
         @repos[repo][:read_access] = line.split - ['=', 'R']
+
+        if @repos[repo][:read_access].include? "daemon"
+          @repos[repo][:public] = 'http'
+        end
       end
 
       prev_line = { type: 'permission', content: line }
@@ -106,6 +125,9 @@ def parse_gitolite_config
 
       current_repos.each do |repo|
         @repos[repo][:hooks] = line.split(' ')
+        if line =~ /github/
+          @repos[repo][:public] = 'github'
+        end
       end
     else
       next
