@@ -18,30 +18,35 @@
 
 import subprocess
 import urllib.request, urllib.parse, urllib.error
+import requests
+import json
 import sys
+import os
 
-def make_thumbs():
+
+def make_thumbs(video_base, local_filename, aspect, output):
+    debug = 1
     print(("## generating thumbs for "  + video_base + local_filename + " ##"))
     if (aspect == "16:9"):
         print("making 16:9 thumbs")
         if debug > 0:
             print(video_base)
-            print("DEBUG: sh " + post + "generate_thumbs_wide16-9.sh " + video_base + local_filename + " " + output + thumb_path)
-        result = subprocess.check_output([post + "generate_thumbs_wide16-9.sh" , video_base + local_filename , output + thumb_path])
+            print("DEBUG: sh postprocessing/generate_thumbs_wide16-9.sh " + video_base + local_filename + " " + output)
+        result = subprocess.check_output(["postprocessing/generate_thumbs_wide16-9.sh" , video_base + local_filename , output])
         print(result)
     if (aspect == "4:3"):
         if debug > 0:
-            print("sh " + post + "generate_thumbs.sh" + video_base + local_filename + " " + output + thumb_path)
+            print("sh postprocessing/generate_thumbs.sh" + video_base + local_filename + " " + output)
         print("making 4:3 thumbs")
-        result = subprocess.check_output([post + "generate_thumbs.sh" , video_base + local_filename , output + thumb_path])
+        result = subprocess.check_output(["postprocessing/generate_thumbs.sh" , video_base + local_filename , output])
     print("thumbs created")
     
 # make a new event on media
-def make_event():
+def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output):
     print(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
-    make_thumbs()
+    make_thumbs(video_base, local_filename, aspect, output)
         
     # prepare variables for api call
     thumb_url = download_thumb_base_url + local_filename_base + ".jpg"
@@ -58,13 +63,14 @@ def make_event():
 
     #call media api (and ignore SSL this should be fixed on media site)
     try:
+        print("api url: " + url)
         r = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
     except requests.packages.urllib3.exceptions.MaxRetryError as err:
         print("Error during creating of event: " + str(err))
         return False
-    except:
-        print ("Unhandelt ssl / retry problem")
-        return False
+#     except:
+#         print ("Unhandelt ssl / retry problem")
+#         return False
     
     if r.status_code == 200 or r.status_code == 201:
         print("new event created")
@@ -78,7 +84,7 @@ def make_event():
             return False
 
 # get filesize and length of the media file
-def get_file_details():
+def get_file_details(local_filename, video_base):
     if local_filename == None:
         print("Error: No filename supplied.")
         sys.exit(1)
@@ -102,14 +108,14 @@ def get_file_details():
         sys.exit(1)
 
 # publish a file on media
-def publish():
+def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, video_base):
     print(("## publishing "+ filename + " to " + api_url + " ##"))
     
     #orig_file_url = download_base_url + codecs[args.codecs]['path'] + filename
     orig_file_url = download_base_url + local_filename 
     
     # make sure we have the file size and length
-    get_file_details()
+    get_file_details(local_filename, video_base)
     
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
@@ -117,7 +123,7 @@ def publish():
                'guid' : guid,
                'recording' : {'original_url' : orig_file_url,
                               'filename' : filename,
-                              'mime_type' : get_mime_type_from_slug(),
+                              'mime_type' : mime_type,
                               'size' : str(filesize),
                               'length' : str(length)
                               }
