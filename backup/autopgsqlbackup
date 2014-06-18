@@ -247,6 +247,11 @@ if [ ! -e "$BACKUPDIR/monthly" ]	# Check Monthly Directory exists.
 	mkdir -p "$BACKUPDIR/monthly"
 fi
 
+if [ ! -e "$BACKUPDIR/latest" ]	# Check latest Directory exists.
+	then
+	mkdir -p "$BACKUPDIR/latest"
+fi
+
 
 # IO redirection for logging.
 touch $LOGFILE
@@ -262,8 +267,8 @@ dbdump () {
   pg_dump --username=$USERNAME $HOST $OPT $1 > $2
 
   if [ $? = 0 ]; then
-    BASENAME=`dirname $2`
-    ln -sf ${2}.bz2 $BASENAME/latest
+    BASENAME=`basename $2`
+    ln -sf ${2}.bz2 ${BACKUPDIR}/latest/${1}/latest
     return 0
   else
     return 1
@@ -379,6 +384,11 @@ echo ======================================================================
 	if [ ! -e "$BACKUPDIR/weekly/$DB" ]		# Check Weekly DB Directory exists.
 		then
 		mkdir -p "$BACKUPDIR/weekly/$DB"
+	fi
+
+	if [ ! -e "$BACKUPDIR/latest/$DB" ]		# Check latest DB Directory exists.
+		then
+		mkdir -p "$BACKUPDIR/latest/$DB"
 	fi
 	
 	# Weekly Backup
