@@ -107,6 +107,7 @@ def get_file_details(local_filename, video_base):
             print("Error: file length is 0")
         else:
             print("filesize: " + str(filesize) + " length: " + str(length))
+            return [filesize,length]
     else:
         print("Error: " + video_base + local_filename + " not found")
         sys.exit(1)
@@ -119,7 +120,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     orig_file_url = download_base_url + local_filename 
     
     # make sure we have the file size and length
-    get_file_details(local_filename, video_base)
+    ret = get_file_details(local_filename, video_base)
     
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
@@ -128,8 +129,8 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
                'recording' : {'original_url' : orig_file_url,
                               'filename' : filename,
                               'folder' : folder,
-                              'size' : str(filesize),
-                              'length' : str(length)
+                              'size' : str(ret[0]),
+                              'length' : str(ret[1])
                               }
                }
     print(payload)
