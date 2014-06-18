@@ -101,14 +101,16 @@ def get_file_details(local_filename, video_base):
             print("ERROR: could not get duration " + exc_value)
         #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
         global length
-        length = r.decode().split(":")
-        length = int(length[0]) * 60 + int(length[1]) 
+        length = r.decode().split(":")            
+        length = int(length[0]) * 60 + int(length[1])
+        if length == 0:
+            print("Error: file length is 0") 
     else:
         print("Error: " + video_base + local_filename + " not found")
         sys.exit(1)
 
 # publish a file on media
-def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, video_base):
+def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, folder, video_base):
     print(("## publishing "+ filename + " to " + api_url + " ##"))
     
     #orig_file_url = download_base_url + codecs[args.codecs]['path'] + filename
@@ -123,7 +125,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
                'guid' : guid,
                'recording' : {'original_url' : orig_file_url,
                               'filename' : filename,
-                              'mime_type' : mime_type,
+                              'folder' : folder,
                               'size' : str(filesize),
                               'length' : str(length)
                               }

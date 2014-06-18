@@ -147,6 +147,22 @@ def get_mime_type_from_slug():
   if profile_slug == 'opus':
     return "audio/opus"
 
+def get_folder_from_slug():
+  if profile_slug == "h264-iprod":
+    return 'mp4-lq'
+  if profile_slug == "h264-hq":
+    return 'mp4'
+  if profile_slug == "h264-hd":
+    return 'mp4-hd'
+  if profile_slug == 'webm':
+    return "webm"
+  if profile_slug == 'ogg':
+    return "ogg"
+  if profile_slug == 'mp3':
+    return "mp3"
+  if profile_slug == 'opus':
+    return "opus"    
+
 ################################# SCP functions ##################################
 # connect to the upload host 
 def connect_ssh():
@@ -273,8 +289,9 @@ def eventFromC3TT():
     print("=========================================")
     #create the event on media
     if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output):
-        mime_type = get_mime_type_from_slug();
-        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, video_base)):
+        #mime_type = get_mime_type_from_slug();
+        folder = get_folder_from_slug()
+        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, folder, video_base)):
             #publishing has failed => set ticket failed
             setTicketFailed(ticket_id, "Error_during_publishing", url, group, host, secret)
             #debug 
