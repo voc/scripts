@@ -92,7 +92,7 @@ def get_file_details(local_filename, video_base):
     if os.path.exists(video_base + local_filename):
         global filesize    
         filesize = os.stat(video_base + local_filename).st_size
-        filesize = filesize / 1024 / 1024
+        filesize = int(filesize / 1024 / 1024)
         
         try:
             global r
@@ -104,7 +104,9 @@ def get_file_details(local_filename, video_base):
         length = r.decode().split(":")            
         length = int(length[0]) * 60 + int(length[1])
         if length == 0:
-            print("Error: file length is 0") 
+            print("Error: file length is 0")
+        else:
+            print("filesize: " + str(filesize) + " length: " + str(length))
     else:
         print("Error: " + video_base + local_filename + " not found")
         sys.exit(1)
