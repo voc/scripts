@@ -289,9 +289,9 @@ def eventFromC3TT():
     print("=========================================")
     #create the event on media
     if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output):
-        #mime_type = get_mime_type_from_slug();
+        mime_type = get_mime_type_from_slug();
         folder = get_folder_from_slug()
-        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, folder, video_base)):
+        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
             #publishing has failed => set ticket failed
             setTicketFailed(ticket_id, "Error_during_publishing", url, group, host, secret)
             #debug 

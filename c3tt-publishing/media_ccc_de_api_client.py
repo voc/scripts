@@ -113,7 +113,7 @@ def get_file_details(local_filename, video_base):
         sys.exit(1)
 
 # publish a file on media
-def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, folder, video_base):
+def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base):
     print(("## publishing "+ filename + " to " + api_url + " ##"))
     
     #orig_file_url = download_base_url + codecs[args.codecs]['path'] + filename
@@ -129,6 +129,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
                'recording' : {'original_url' : orig_file_url,
                               'filename' : filename,
                               'folder' : folder,
+                              'mime_type' : mime_type,
                               'size' : str(ret[0]),
                               'length' : str(ret[1])
                               }
