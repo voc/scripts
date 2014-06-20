@@ -102,7 +102,7 @@ def get_file_details(local_filename, video_base):
         #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
         global length
         length = r.decode().split(":")            
-        length = (int(length[0]) * 60 + int(length[1])) * 60
+        length = (int(length[0]) * 60 + int(length[1])) * 60 + int(length[2])
         if length == 0:
             print("Error: file length is 0")
         else:
