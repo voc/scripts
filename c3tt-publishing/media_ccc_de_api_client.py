@@ -42,7 +42,7 @@ def make_thumbs(video_base, local_filename, aspect, output):
     print("thumbs created")
     
 # make a new event on media
-def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output):
+def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug):
     print(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
@@ -57,6 +57,7 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
     payload = {'api_key' : api_key,
                'acronym' : acronym,
                'guid' : guid,
+               'slug' : slug,
                'poster_url' : poster_url,
                'thumb_url' : thumb_url,
                'gif_url' : preview_url }     
@@ -121,7 +122,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     
     # make sure we have the file size and length
     ret = get_file_details(local_filename, video_base)
-    
+        
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
