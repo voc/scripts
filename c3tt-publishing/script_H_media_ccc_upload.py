@@ -288,7 +288,7 @@ def eventFromC3TT():
     print("creating event on " + api_url)
     print("=========================================")
     #create the event on media
-    if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output):
+    if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug):
         mime_type = get_mime_type_from_slug();
         folder = get_folder_from_slug()
         if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
