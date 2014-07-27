@@ -8,7 +8,7 @@
 while ! sv status ../snowmix/ >/dev/null; do echo "feed2 waiting for snowmix"; sleep 1; done
 while ! sv status ../avout/ >/dev/null; do echo "feed2 waiting for avout"; sleep 1; done
 
-sleep 2
+sleep 6
 
 rm /tmp/feed2-control-pipe
 gst-launch-1.0 \

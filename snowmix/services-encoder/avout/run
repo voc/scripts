@@ -3,7 +3,7 @@
 . ../config
 
 while ! sv status ../snowmix/ >/dev/null; do echo "avout waiting for snowmix"; sleep 1; done
-sleep 2
+sleep 3
 
 ( echo "audio sink ctr isaudio 1" ; sleep 10000000 ) | nc 127.0.0.1 9999 | ( head -1
 	/usr/bin/gst-launch-1.0 -q \
