@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. ../config
+
+#decklinksrc mode=11 connection=0 !\
+#souphttpsrc location=http://video.blendertestbuilds.de/download.blender.org/ED/ED_HD.avi !\
+
+while ! sv status ../snowmix/ >/dev/null; do echo "feed3 waiting for snowmix"; sleep 1; done
+while ! sv status ../avout/ >/dev/null; do echo "feed3 waiting for avout"; sleep 1; done
+
+sleep 3
+
+rm /tmp/feed3-control-pipe
+gst-launch-1.0 \
+	filesrc location=/home/peter/UAV.mp4 !\
+	decodebin name=decoder !\
+	videorate !\
+	videoscale !\
+	videoconvert !\
+	video/x-raw,\
+		format='(string)BGRA',\
+		pixel-aspect-ratio='(fraction)1/1',\
+		interlace-mode='(string)progressive',\
+		width='(int)1920',\
+		height='(int)1080',\
+		framerate='(fraction)25/1' !\
+	shmsink socket-path=/tmp/feed3-control-pipe \
+		shm-size=150000000 \
+		wait-for-connection=0

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+. ../config
+
+while ! sv status ../snowmix/ >/dev/null; do echo "avout waiting for snowmix"; sleep 1; done
+sleep 2
+
+( echo "audio sink ctr isaudio 1" ; sleep 10000000 ) | nc 127.0.0.1 9999 | ( head -1
+	/usr/bin/gst-launch-1.0 -q \
+		shmsrc socket-path=/tmp/mixer1 do-timestamp=true is-live=true !\
+		video/x-raw,\
+			format='(string)BGRA',\
+			pixel-aspect-ratio='(fraction)1/1',\
+			interlace-mode='(string)progressive',\
+			width='(int)1920',\
+			height='(int)1080',\
+			framerate='(fraction)25/1' !\
+		queue !\
+		videoconvert !\
+		autovideosink \
+		\
+		fdsrc fd=0 !\
+		audio/x-raw,\
+			format='(string)S16LE',\
+			endianness='(int)1234',\
+			signed='(boolean)true',\
+			width='(int)16',\
+			depth='(int)16',\
+			rate='(int)48000',\
+			channels='(int)2' !\
+		queue !\
+		audioconvert !\
+		audioresample !\
+		autoaudiosink
+	)

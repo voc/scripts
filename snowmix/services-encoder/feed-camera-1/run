@@ -1,0 +1,45 @@
+#!/bin/sh
+
+. ../config
+
+#decklinksrc mode=11 connection=0 !\
+#souphttpsrc location=http://video.blendertestbuilds.de/download.blender.org/ED/ED_HD.avi !\
+
+while ! sv status ../snowmix/ >/dev/null; do echo "feed1 waiting for snowmix"; sleep 1; done
+while ! sv status ../avout/ >/dev/null; do echo "feed1 waiting for avout"; sleep 1; done
+
+sleep 1
+
+rm /tmp/feed1-control-pipe
+(
+	echo 'audio feed ctr isaudio 1'
+	gst-launch-1.0 -q \
+		filesrc location=/home/peter/2014-05-23-Aufraeumaktion-und-Copter-Reparatur.mp4 !\
+		decodebin name=decoder !\
+		videorate !\
+		videoscale !\
+		videoconvert !\
+		video/x-raw,\
+			format='(string)BGRA',\
+			pixel-aspect-ratio='(fraction)1/1',\
+			interlace-mode='(string)progressive',\
+			width='(int)1920',\
+			height='(int)1080',\
+			framerate='(fraction)25/1' !\
+		shmsink socket-path=/tmp/feed1-control-pipe \
+			shm-size=150000000 \
+			wait-for-connection=0 \
+		\
+		decoder. !\
+		queue !\
+		audioconvert !\
+		audioresample !\
+		audio/x-raw,\
+			format='(string)S16LE',\
+			layout='(string)interleaved',\
+			rate='(int)48000',\
+			channels='(int)2' !\
+		fdsink \
+			fd=1\
+			sync=true
+) | nc 127.0.0.1 9999

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+. ../config
+
+rm /dev/shm/shmpipe.*
+$SM/src/snowmix two-cameras-with-slides-hd.ini
