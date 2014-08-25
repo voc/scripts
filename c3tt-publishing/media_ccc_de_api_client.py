@@ -42,7 +42,7 @@ def make_thumbs(video_base, local_filename, aspect, output):
     print("thumbs created")
     
 # make a new event on media
-def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug):
+def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
     print(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
@@ -57,10 +57,15 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
     payload = {'api_key' : api_key,
                'acronym' : acronym,
                'guid' : guid,
-               'slug' : slug,
                'poster_url' : poster_url,
                'thumb_url' : thumb_url,
-               'gif_url' : preview_url }     
+               'gif_url' : preview_url,
+	       'slug' : slug,
+	       'title' : title,
+	       'subtitle' : subtitle,
+	       'description' : description
+	      }     
+    print(payload)
 
     #call media api (and ignore SSL this should be fixed on media site)
     try:
@@ -97,13 +102,12 @@ def get_file_details(local_filename, video_base):
         
         try:
             global r
-            r = subprocess.check_output('ffprobe ' + video_base + local_filename +" 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ", shell=True)
+            r = subprocess.check_output('ffprobe -print_format flat -show_format -loglevel quiet ' + video_base + local_filename +' 2>&1 | grep format.duration | cut -d= -f 2 | sed -e "s/\\"//g" -e "s/\..*//g" ', shell=True)
         except:
             print("ERROR: could not get duration " + exc_value)
         #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
         global length
-        length = r.decode().split(":")            
-        length = (int(length[0]) * 60 + int(length[1])) * 60 + int(length[2])
+        length = int(r.decode())
         if length == 0:
             print("Error: file length is 0")
         else:
@@ -122,7 +126,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     
     # make sure we have the file size and length
     ret = get_file_details(local_filename, video_base)
-        
+    
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
