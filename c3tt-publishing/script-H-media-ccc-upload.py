@@ -44,45 +44,53 @@ if not os.path.exists('client.conf'):
 config = configparser.ConfigParser()
 config.read('client.conf')
 
-################### C3 Tracker ###################
-#project = "projectslug"
-group = config['C3Tracker']['group']
-secret =  config['C3Tracker']['secret']
+source = config['general']['source']
+dest = config['general']['dest']
 
-if config['C3Tracker']['host'] == "None":
-        host = socket.getfqdn()
-else:
-    host = config['C3Tracker']['host']
+if source == 'c3tt':
+    ################### C3 Tracker ###################
+    #project = "projectslug"
+    group = config['C3Tracker']['group']
+    secret =  config['C3Tracker']['secret']
 
-url = config['C3Tracker']['url']
-from_state = config['C3Tracker']['from_state']
-to_state = config['C3Tracker']['to_state']
+    if config['C3Tracker']['host'] == "None":
+            host = socket.getfqdn()
+    else:
+        host = config['C3Tracker']['host']
 
-################### media.ccc.de #################
-#API informations
-api_url =  config['media.ccc.de']['api_url']
-api_key =  config['media.ccc.de']['api_key']
-download_thumb_base_url = config['media.ccc.de']['download_thumb_base_url']
-download_base_url = config['media.ccc.de']['download_base_url']
+    url = config['C3Tracker']['url']
+    from_state = config['C3Tracker']['from_state']
+    to_state = config['C3Tracker']['to_state']
 
-#release host information
-# upload_host = config['media.ccc.de']['uplod_host']
-# upload_user = config['media.ccc.de']['upload_user']
-# upload_pw = config['media.ccc.de']['upload_pw'] #it is recommended to use key login. PW musts be set but can be random
-# upload_path = config['media.ccc.de']['upload_path']
+if dest == 'media':
+    ################### media.ccc.de #################
+    #API informations
+    api_url =  config['media.ccc.de']['api_url']
+    api_key =  config['media.ccc.de']['api_key']
+    download_thumb_base_url = config['media.ccc.de']['download_thumb_base_url']
+    download_base_url = config['media.ccc.de']['download_base_url']
 
-#################### conference information ######################
-rec_path = config['conference']['rec_path']
-image_path = config['conference']['image_path']
-webgen_loc = config['conference']['webgen_loc']
-#currently 4:3 and 16:9 are supported by the media API
-aspect = config['conference']['aspect']
+    #release host information
+    # upload_host = config['media.ccc.de']['uplod_host']
+    # upload_user = config['media.ccc.de']['upload_user']
+    # upload_pw = config['media.ccc.de']['upload_pw'] #it is recommended to use key login. PW musts be set but can be random
+    # upload_path = config['media.ccc.de']['upload_path']
 
-################### script environment ########################
-# base dir for video input files (local)
-video_base = config['env']['video_base'] #in case of C3TT this will be overwritten!!
-# base dir for video output files (local)
-output = config['env']['output'] #in case of C3TT this will be overwritten!!!
+#if we dont use the tracker we need to get the informations from the config
+if source != 'c3tt':
+    #################### conference information ######################
+    rec_path = config['conference']['rec_path']
+    image_path = config['conference']['image_path']
+    webgen_loc = config['conference']['webgen_loc']
+    #currently 4:3 and 16:9 are supported by the media API
+    aspect = config['conference']['aspect']
+
+    ################### script environment ########################
+    # base dir for video input files (local)
+    video_base = config['env']['video_base']
+    # base dir for video output files (local)
+    output = config['env']['output']
+
 #define paths to the scripts
 post = config['env']['post']
 #path to the thumb export.
@@ -112,8 +120,6 @@ codecs = {
           "ext"  :  ".ogg"}
 }
 
-print("config complete")
-
 #internal vars
 filesize = 0
 length = 0
@@ -133,7 +139,7 @@ subtitle = None
 description = None
 
 ################################## media.ccc.de related functions ##################################
-
+#TODO this only works with tracker and media, find a more generic way!!
 def get_mime_type_from_slug():
   if profile_slug == "h264-iprod":
     return 'vnd.voc/h264-lq'
@@ -166,92 +172,16 @@ def get_folder_from_slug():
   if profile_slug == 'opus':
     return "opus"    
 
-################################# SCP functions ##################################
-# connect to the upload host 
-def connect_ssh():
-    print("## Establishing SSH connection ##")
-    client = paramiko.SSHClient()
-    #client.get_host_keys().add(upload_host,'ssh-rsa', key)
-    client.load_system_host_keys()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        client.connect(upload_host, username=upload_user, password=upload_pw)
-    except paramiko.SSHException:
-        print("ERROR: SSH negotiation failed")
-        print(sys.exc_value)
-        sys.exit(1)
-    except paramiko.AuthenticationException:
-        print ("ERROR: Authentication failed. Please check credentials")
-        print (sys.exc_value)
-        sys.exit(1)
-    except paramiko.BadHostKeyException:
-        print ("ERROR: Bad host key. Check your known_hosts file")
-        print (sys.exc_value)
-        sys.exit(1)
-    except paramiko.PasswordRequiredException:
-        print ("ERROR: Password required. No ssh key in the agent?")
-        print (sys.exc_value)
-        sys.exit(1)
-    except:
-        print ("ERROR: Could not open ssh connection")
-        print (sys.exc_value)
-        sys.exit(1)
-        
-    global ssh 
-    ssh = client
-    global sftp
-    sftp = paramiko.SFTPClient.from_transport(client.get_transport())
-    print ("SSH connection established")
-    
-# push the thumbs to the upload host
-def upload_thumbs():
-    print ("## uploading thumbs ##")
-    
-    # check if ssh connection is open
-    if ssh == None or sftp == None:
-        connect_ssh()
-    thumbs_ext = {".gif",".jpg","_preview.jpg"}
-    for ext in thumbs_ext:
-        try:
-            sftp.put(output + thumb_path + local_filename_base + ext, upload_path + thumb_path + guid + ext)
-        except paramiko.SSHException:
-            print ("ERROR: could not upload thumb becaus of SSH problem")
-            print (sys.exc_value)
-            sys.exit(1)
-        except IOError:
-            print ("ERROR: could not create file in upload dir")
-            print (sys.exc_value)
-            sys.exit(1)
-            
-    print ("uploading thumbs done")
-
-#uploads a file from path relative to the output dir to the same path relative to the upload_dir
-def upload_file(filename, path):
-    print ("## uploading "+ path + filename + " ##")
-    
-    # check if ssh connection is open
-    if (ssh == None or sftp == None):
-        connect_ssh()
-    
-    try:
-        sftp.put(output + path + filename, upload_path + path + filename)
-    except paramiko.SSHException:
-        print ("ERROR: could not upload thumb becaus of SSH problem")
-        print (sys.exc_value)
-        sys.exit(1)
-    except IOError:
-        print ("ERROR: could not create file in upload dir")
-        print (sys.exc_value)
-        sys.exit(1)
-            
-    print ("uploading " + filename + " done")
+################################# Error Handling #################################
+def error_handler(error, module):
+    #print a debug message
+    print("An error occures in module: " + module + "\n this is the error message: \n" + error)
     
 ################################# Here be dragons #################################
 def iCanHazTicket():
     print("getting ticket from " + url)
     print("=========================================")
     
-
     #check if we got a new ticket
     global ticket_id
     ticket_id = assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
@@ -273,6 +203,7 @@ def iCanHazTicket():
         global title
         global subtitle 
         global description
+
         guid = ticket['Fahrplan.GUID']
         slug = ticket['Fahrplan.Slug']
         slug_c = slug.replace(":","_")    
