@@ -58,8 +58,8 @@ genthum "$file" 6 00:15:42
 genthum "$file" 7 00:25:42
 
 # ani gif is 4:3
-mogrify -resize 256x144   $DIR/gif*.jpg 
-mogrify -crop 180x144+0+0 $DIR/gif*.jpg 
+mogrify -resize 256x144\!   $DIR/gif*.jpg 
+mogrify -crop 192x144+32+0   $DIR/gif*.jpg 
 
 # create thumbnail and static first image
 cp $DIR/gif0.jpg "${outjpg}"
