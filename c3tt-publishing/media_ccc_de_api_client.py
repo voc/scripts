@@ -51,7 +51,6 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
     # prepare variables for api call
     thumb_url = download_thumb_base_url + local_filename_base + ".jpg"
     poster_url = download_thumb_base_url + local_filename_base + "_preview.jpg"
-    preview_url = download_thumb_base_url + local_filename_base +".gif"
     url = api_url + 'events'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
@@ -59,7 +58,6 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
                'guid' : guid,
                'poster_url' : poster_url,
                'thumb_url' : thumb_url,
-               'gif_url' : preview_url,
 	       'slug' : slug,
 	       'title' : title,
 	       'subtitle' : subtitle,
