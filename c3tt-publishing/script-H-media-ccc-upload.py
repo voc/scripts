@@ -93,8 +93,6 @@ if source != 'c3tt':
     rec_path = config['conference']['rec_path']
     image_path = config['conference']['image_path']
     webgen_loc = config['conference']['webgen_loc']
-    #currently 4:3 and 16:9 are supported by the media API
-    aspect = config['conference']['aspect']
 
     ################### script environment ########################
     # base dir for video input files (local)
@@ -237,7 +235,7 @@ def eventFromC3TT():
     logging.info("creating event on " + api_url)
     logging.info("=========================================")
     #create the event on media
-    if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
+    if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
         mime_type = get_mime_type_from_slug();
         folder = get_folder_from_slug()
         if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
