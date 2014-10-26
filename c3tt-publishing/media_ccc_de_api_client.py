@@ -24,30 +24,43 @@ import sys
 import os
 
 
-def make_thumbs(video_base, local_filename, aspect, output):
+def make_thumbs(video_base, local_filename, output):
     debug = 1
+    
     print(("## generating thumbs for "  + video_base + local_filename + " ##"))
-    if (aspect == "16:9"):
-        print("making 16:9 thumbs")
-        if debug > 0:
-            print(video_base)
-            print("DEBUG: sh postprocessing/generate_thumbs_wide16-9.sh " + video_base + local_filename + " " + output)
-        result = subprocess.check_output(["postprocessing/generate_thumbs_wide16-9.sh" , video_base + local_filename , output])
-        print(result)
-    if (aspect == "4:3"):
-        if debug > 0:
-            print("sh postprocessing/generate_thumbs.sh" + video_base + local_filename + " " + output)
-        print("making 4:3 thumbs")
-        result = subprocess.check_output(["postprocessing/generate_thumbs.sh" , video_base + local_filename , output])
+
+    try:
+        subprocess.check_call(["postprocessing/generate_thumbs_wide16-9.sh", video_base + local_filename, ouput])
+    except CalledProcessError as err:
+        print("A fault occurred")
+        print("Fault code: %d" % err.faultCode)
+        print("Fault string: %s" % err.faultString)
+        return False
+         
     print("thumbs created")
+    return True
+
+#     if (aspect == "16:9"):
+#         print("making 16:9 thumbs")
+#         if debug > 0:
+#             print(video_base)
+#             print("DEBUG: sh postprocessing/generate_thumbs_wide16-9.sh " + video_base + local_filename + " " + output)
+#         result = subprocess.check_output(["postprocessing/generate_thumbs_wide16-9.sh" , video_base + local_filename , output])
+#         print(result)
+#     if (aspect == "4:3"):
+#         if debug > 0:
+#             print("sh postprocessing/generate_thumbs.sh" + video_base + local_filename + " " + output)
+#         print("making 4:3 thumbs")
+#         result = subprocess.check_output(["postprocessing/generate_thumbs.sh" , video_base + local_filename , output])
     
 # make a new event on media
 def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
     print(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
-    make_thumbs(video_base, local_filename, aspect, output)
-        
+    if not make_thumbs(video_base, local_filename, aspect, output):
+        return False
+            
     # prepare variables for api call
     thumb_url = download_thumb_base_url + local_filename_base + ".jpg"
     poster_url = download_thumb_base_url + local_filename_base + "_preview.jpg"
@@ -93,7 +106,6 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
 def get_file_details(local_filename, video_base):
     if local_filename == None:
         print("Error: No filename supplied.")
-        sys.exit(1)
     
     if os.path.exists(video_base + local_filename):
         global filesize    
@@ -144,6 +156,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
         r = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
     except requests.exceptions.SSLError:
         print("ssl cert error")
+        return False
     except requests.packages.urllib3.exceptions.MaxRetryError as err:
         print("Error during creating of event: " + str(err))
         return False

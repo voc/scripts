@@ -27,18 +27,29 @@ import xml.etree.ElementTree as ET
 import json
 import configparser
 import paramiko
+import inspect
+import logging
 
 from c3t_rpc_client import * 
 from media_ccc_de_api_client import *
 from auphonic_client import *
 
 
-print("C3TT publishing")
-print("=========================================")
-print("reading config")
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+root.addHandler(ch)
+
+logging.info("C3TT publishing")
+logging.info("=========================================")
+logging.info("reading config")
 #make sure we have a config file
 if not os.path.exists('client.conf'):
-    print("Error: config file not found")
+    logging.error("Error: config file not found")
     sys.exit(1)
     
 config = configparser.ConfigParser()
@@ -172,23 +183,17 @@ def get_folder_from_slug():
   if profile_slug == 'opus':
     return "opus"    
 
-################################# Error Handling #################################
-def error_handler(error, module):
-    #print a debug message
-    print("An error occures in module: " + module + "\n this is the error message: \n" + error)
-    
 ################################# Here be dragons #################################
 def iCanHazTicket():
-    print("getting ticket from " + url)
-    print("=========================================")
+    logging.info("getting ticket from " + url)
+    logging.info("=========================================")
     
     #check if we got a new ticket
     global ticket_id
     ticket_id = assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
     if ticket_id != False:
         #copy ticket details to local variables
-        #TODO make this nice
-        print("Ticket ID:" + str(ticket_id))
+        logging.info("Ticket ID:" + str(ticket_id))
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
         global acronym
         global local_filename
@@ -223,14 +228,14 @@ def iCanHazTicket():
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
         #debug
-        print("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
     else:
-        print("No ticket for this task, exiting")
+        loging.warn("No ticket for this task, exiting")
         sys.exit(0);
 
 def eventFromC3TT():
-    print("creating event on " + api_url)
-    print("=========================================")
+    logging.info("creating event on " + api_url)
+    logging.info("=========================================")
     #create the event on media
     if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
         mime_type = get_mime_type_from_slug();
@@ -239,20 +244,26 @@ def eventFromC3TT():
             #publishing has failed => set ticket failed
             setTicketFailed(ticket_id, "Error_during_publishing", url, group, host, secret)
             #debug 
-            print("Publishing failed")
+            logging.error("Publishing failed")
             sys.exit()
           
         # set ticket done
         else:
             #debug
-            print("set ticket done")
+            logging.info("set ticket done")
             setTicketDone(ticket_id, url, group, host, secret)
     else:
-        print("event creation on media.ccc.de failed")
+        logging.error("event creation on media.ccc.de failed")
         setTicketFailed(ticket_id, "Error_during_creation_of_event_on_media", url, group, host, secret)
                      
 def auphonicFromTracker():
-    print("Pushing file to Auphonic")
+    logging.info("Pushing file to Auphonic")
 
-iCanHazTicket()    
-eventFromC3TT()
+#iCanHazTicket()    
+#eventFromC3TT()
+def test():
+  logging.info("foobar")
+
+logging.info("foo")
+test()
+
