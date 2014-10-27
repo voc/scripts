@@ -22,7 +22,9 @@ import socket
 import urllib
 import xml
 import sys
+import logging
 
+logger = logging.getLogger()
 
 ## client constructor #####
 # group: worker group
@@ -63,49 +65,49 @@ def C3TClient(url, method, group, host, secret, args):
     args.append(hash.hexdigest())
     
     #### create xmlrpc client
-    print('creating XML RPC proxy: ' + url + "?group=" + group + "&hostname=" + host)
+    logger.info('creating XML RPC proxy: ' + url + "?group=" + group + "&hostname=" + host)
     try:
         proxy = xmlrpc.client.ServerProxy(url + "?group=" + group + "&hostname=" + host);
     except xmlrpc.client.Fault as err:
-        print("A fault occurred")
-        print("Fault code: %d" % err.faultCode)
-        print("Fault string: %s" % err.faultString)
+        logger.error("A fault occurred")
+        logger.error("Fault code: %d" % err.faultCode)
+        logger.error("Fault string: %s" % err.faultString)
         sys.exit()
     except xmlrpc.client.ProtocolError as err:
-        print("A protocol error occurred")
-        print("URL: %s" % err.url)
-        print("HTTP/HTTPS headers: %s" % err.headers)
-        print("Error code: %d" % err.errcode)
-        print("Error message: %s" % err.errmsg)
+        logger.error("A protocol error occurred")
+        logger.error("URL: %s" % err.url)
+        logger.error("HTTP/HTTPS headers: %s" % err.headers)
+        logger.error("Error code: %d" % err.errcode)
+        logger.error("Error message: %s" % err.errmsg)
         sys.exit()
     except socket.gaierror as err:
-        print("A socket error occurred")
-        print(err)
+        logger.error("A socket error occurred")
+        logger.error(err)
         sys.exit()
     except xmlrpc.client.ProtocolError as err:
-        print("A Protocol occurred")
-        print(err)
+        logger.error("A Protocol occurred")
+        logger.error(err)
         sys.exit()
     
     #### call the given method with args
     try:
-        print(method + str(args))
+        logger.debug(method + str(args))
         result = getattr(proxy,method)(*args)
     except xml.parsers.expat.ExpatError as err:
-        print("A expat err occured")
-        print(err)
+        logger.error("A expat err occured")
+        logger.error(err)
         sys.exit()
     except xmlrpc.client.Fault as err:
-        print("A fault occurred")
-        print("Fault code: %d" % err.faultCode)
-        print("Fault string: %s" % err.faultString)
+        logger.error("A fault occurred")
+        logger.error("Fault code: %d" % err.faultCode)
+        logger.error("Fault string: %s" % err.faultString)
         sys.exit()
     except xmlrpc.client.ProtocolError as err:
-        print("A protocol error occurred")
-        print("URL: %s" % err.url)
-        print("HTTP/HTTPS headers: %s" % err.headers)
-        print("Error code: %d" % err.errcode)
-        print("Error message: %s" % err.errmsg)
+        logger.error("A protocol error occurred")
+        logger.error("URL: %s" % err.url)
+        logger.error("HTTP/HTTPS headers: %s" % err.headers)
+        logger.error("Error code: %d" % err.errcode)
+        logger.error("Error message: %s" % err.errmsg)
         sys.exit()
     #### return the result
     return result
@@ -135,17 +137,17 @@ def getTicketProperties(id ,url, group, host, secret):
     tmp_args = [id]
     xml = open_rpc("C3TT.getTicketProperties",tmp_args, url, group, host, secret)
     if xml == False:
-        print("no xml in answer")
+        logger.error("no xml in answer")
         return None
     else:
-        print(xml)
+        logger.debug(xml)
         return xml
 
 ### set Ticket status on done
 def setTicketDone(id, url, group, host, secret):
     tmp_args = [id]
     xml = open_rpc("C3TT.setTicketDone", tmp_args , url, group, host, secret)
-    print(xml)
+    logger.debug(xml)
     
 ### set ticket status on failed an supply a error text
 def setTicketFailed(id,error , url, group, host, secret):

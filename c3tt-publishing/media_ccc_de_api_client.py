@@ -42,7 +42,7 @@ def make_thumbs(video_base, local_filename, output):
     return True
     
 # make a new event on media
-def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
+def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
     logger.info(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
@@ -50,8 +50,8 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
         return False
             
     # prepare variables for api call
-    thumb_url = download_thumb_base_url + local_filename_base + ".jpg"
-    poster_url = download_thumb_base_url + local_filename_base + "_preview.jpg"
+    thumb_url = download__base_url + "thumbs" + local_filename_base + ".jpg"
+    poster_url = download_base_url + "thumbs" + local_filename_base + "_preview.jpg"
     url = api_url + 'events'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,

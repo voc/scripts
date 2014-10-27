@@ -34,19 +34,24 @@ from c3t_rpc_client import *
 from media_ccc_de_api_client import *
 from auphonic_client import *
 
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
-root = logging.getLogger()
-root.setLevel(logging.DEBUG)
+logging.addLevelName( logging.WARNING, "\033[1;33m%s\033[1;0m" % logging.getLevelName(logging.WARNING))
+logging.addLevelName( logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
+logging.addLevelName( logging.INFO, "\033[1;32m%s\033[1;0m" % logging.getLevelName(logging.INFO))
+logging.addLevelName( logging.DEBUG, "\033[1;85m%s\033[1;0m" % logging.getLevelName(logging.DEBUG))
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
-root.addHandler(ch)
+logger.addHandler(ch)
 
 logging.info("C3TT publishing")
-logging.info("=========================================")
-logging.info("reading config")
+logging.debug("reading config")
+
+### handle config
 #make sure we have a config file
 if not os.path.exists('client.conf'):
     logging.error("Error: config file not found")
@@ -54,11 +59,12 @@ if not os.path.exists('client.conf'):
     
 config = configparser.ConfigParser()
 config.read('client.conf')
-
 source = config['general']['source']
 dest = config['general']['dest']
 
-if source == 'c3tt':
+source = "c3tt" #TODO quickfix for strange parser behavior
+
+if source == "c3tt":
     ################### C3 Tracker ###################
     #project = "projectslug"
     group = config['C3Tracker']['group']
@@ -78,8 +84,8 @@ if dest == 'media':
     #API informations
     api_url =  config['media.ccc.de']['api_url']
     api_key =  config['media.ccc.de']['api_key']
-    download_thumb_base_url = config['media.ccc.de']['download_thumb_base_url']
-    download_base_url = config['media.ccc.de']['download_base_url']
+    #download_thumb_base_url = config['media.ccc.de']['download_thumb_base_url']
+    #download_base_url = config['media.ccc.de']['download_base_url']
 
     #release host information
     # upload_host = config['media.ccc.de']['uplod_host']
@@ -100,8 +106,6 @@ if source != 'c3tt':
     # base dir for video output files (local)
     output = config['env']['output']
 
-#define paths to the scripts
-post = config['env']['post']
 #path to the thumb export.
 #this is also used as postfix for the publishing dir
 thumb_path = config['env']['thumb_path']
@@ -206,7 +210,8 @@ def iCanHazTicket():
         global title
         global subtitle 
         global description
-
+        global download_base_url
+        
         guid = ticket['Fahrplan.GUID']
         slug = ticket['Fahrplan.Slug']
         slug_c = slug.replace(":","_")    
@@ -218,6 +223,7 @@ def iCanHazTicket():
         local_filename_base =  ticket['Fahrplan.ID']
         video_base = str(ticket['Publishing.Path'])
         output = str(ticket['Publishing.Path']) + "/"+ str(thumb_path)
+        download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
         title = ticket['Fahrplan.Title']
@@ -228,14 +234,14 @@ def iCanHazTicket():
         #debug
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
     else:
-        loging.warn("No ticket for this task, exiting")
+        logging.warn("No ticket for this task, exiting")
         sys.exit(0);
 
 def eventFromC3TT():
     logging.info("creating event on " + api_url)
     logging.info("=========================================")
     #create the event on media
-    if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
+    if make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
         mime_type = get_mime_type_from_slug();
         folder = get_folder_from_slug()
         if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
@@ -257,11 +263,11 @@ def eventFromC3TT():
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
 
-#iCanHazTicket()    
+iCanHazTicket()    
 #eventFromC3TT()
-def test():
-  logging.info("foobar")
+#def test():
+#  logging.info("foobar")
 
-logging.info("foo")
-test()
+#logging.info("foo")
+#test()
 
