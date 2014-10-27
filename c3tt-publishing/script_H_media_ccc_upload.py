@@ -76,7 +76,7 @@ rec_path = config['conference']['rec_path']
 image_path = config['conference']['image_path']
 webgen_loc = config['conference']['webgen_loc']
 #currently 4:3 and 16:9 are supported by the media API
-aspect = config['conference']['aspect']
+#aspect = config['conference']['aspect']
 
 ################### script environment ########################
 # base dir for video input files (local)
