@@ -27,64 +27,85 @@ import xml.etree.ElementTree as ET
 import json
 import configparser
 import paramiko
+import inspect
+import logging
 
 from c3t_rpc_client import * 
 from media_ccc_de_api_client import *
 from auphonic_client import *
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-print("C3TT publishing")
-print("=========================================")
-print("reading config")
+logging.addLevelName( logging.WARNING, "\033[1;33m%s\033[1;0m" % logging.getLevelName(logging.WARNING))
+logging.addLevelName( logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
+logging.addLevelName( logging.INFO, "\033[1;32m%s\033[1;0m" % logging.getLevelName(logging.INFO))
+logging.addLevelName( logging.DEBUG, "\033[1;85m%s\033[1;0m" % logging.getLevelName(logging.DEBUG))
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
+logging.info("C3TT publishing")
+logging.debug("reading config")
+
+### handle config
 #make sure we have a config file
 if not os.path.exists('client.conf'):
-    print("Error: config file not found")
+    logging.error("Error: config file not found")
     sys.exit(1)
     
 config = configparser.ConfigParser()
 config.read('client.conf')
+source = config['general']['source']
+dest = config['general']['dest']
 
-################### C3 Tracker ###################
-#project = "projectslug"
-group = config['C3Tracker']['group']
-secret =  config['C3Tracker']['secret']
+source = "c3tt" #TODO quickfix for strange parser behavior
 
-if config['C3Tracker']['host'] == "None":
-        host = socket.getfqdn()
-else:
-    host = config['C3Tracker']['host']
+if source == "c3tt":
+    ################### C3 Tracker ###################
+    #project = "projectslug"
+    group = config['C3Tracker']['group']
+    secret =  config['C3Tracker']['secret']
 
-url = config['C3Tracker']['url']
-from_state = config['C3Tracker']['from_state']
-to_state = config['C3Tracker']['to_state']
+    if config['C3Tracker']['host'] == "None":
+            host = socket.getfqdn()
+    else:
+        host = config['C3Tracker']['host']
 
-################### media.ccc.de #################
-#API informations
-api_url =  config['media.ccc.de']['api_url']
-api_key =  config['media.ccc.de']['api_key']
-download_thumb_base_url = config['media.ccc.de']['download_thumb_base_url']
-download_base_url = config['media.ccc.de']['download_base_url']
+    url = config['C3Tracker']['url']
+    from_state = config['C3Tracker']['from_state']
+    to_state = config['C3Tracker']['to_state']
 
-#release host information
-# upload_host = config['media.ccc.de']['uplod_host']
-# upload_user = config['media.ccc.de']['upload_user']
-# upload_pw = config['media.ccc.de']['upload_pw'] #it is recommended to use key login. PW musts be set but can be random
-# upload_path = config['media.ccc.de']['upload_path']
+if True:
+    ################### media.ccc.de #################
+    #API informations
+    api_url =  config['media.ccc.de']['api_url']
+    api_key =  config['media.ccc.de']['api_key']
+    #download_thumb_base_url = config['media.ccc.de']['download_thumb_base_url']
+    #download_base_url = config['media.ccc.de']['download_base_url']
 
-#################### conference information ######################
-rec_path = config['conference']['rec_path']
-image_path = config['conference']['image_path']
-webgen_loc = config['conference']['webgen_loc']
-#currently 4:3 and 16:9 are supported by the media API
-aspect = config['conference']['aspect']
+    #release host information
+    # upload_host = config['media.ccc.de']['uplod_host']
+    # upload_user = config['media.ccc.de']['upload_user']
+    # upload_pw = config['media.ccc.de']['upload_pw'] #it is recommended to use key login. PW musts be set but can be random
+    # upload_path = config['media.ccc.de']['upload_path']
 
-################### script environment ########################
-# base dir for video input files (local)
-video_base = config['env']['video_base'] #in case of C3TT this will be overwritten!!
-# base dir for video output files (local)
-output = config['env']['output'] #in case of C3TT this will be overwritten!!!
-#define paths to the scripts
-post = config['env']['post']
+#if we dont use the tracker we need to get the informations from the config
+if source != 'c3tt':
+    #################### conference information ######################
+    rec_path = config['conference']['rec_path']
+    image_path = config['conference']['image_path']
+    webgen_loc = config['conference']['webgen_loc']
+
+    ################### script environment ########################
+    # base dir for video input files (local)
+    video_base = config['env']['video_base']
+    # base dir for video output files (local)
+    output = config['env']['output']
+
 #path to the thumb export.
 #this is also used as postfix for the publishing dir
 thumb_path = config['env']['thumb_path']
@@ -112,8 +133,6 @@ codecs = {
           "ext"  :  ".ogg"}
 }
 
-print("config complete")
-
 #internal vars
 filesize = 0
 length = 0
@@ -133,7 +152,7 @@ subtitle = None
 description = None
 
 ################################## media.ccc.de related functions ##################################
-
+#TODO this only works with tracker and media, find a more generic way!!
 def get_mime_type_from_slug():
   if profile_slug == "h264-iprod":
     return 'vnd.voc/h264-lq'
@@ -166,99 +185,17 @@ def get_folder_from_slug():
   if profile_slug == 'opus':
     return "opus"    
 
-################################# SCP functions ##################################
-# connect to the upload host 
-def connect_ssh():
-    print("## Establishing SSH connection ##")
-    client = paramiko.SSHClient()
-    #client.get_host_keys().add(upload_host,'ssh-rsa', key)
-    client.load_system_host_keys()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        client.connect(upload_host, username=upload_user, password=upload_pw)
-    except paramiko.SSHException:
-        print("ERROR: SSH negotiation failed")
-        print(sys.exc_value)
-        sys.exit(1)
-    except paramiko.AuthenticationException:
-        print ("ERROR: Authentication failed. Please check credentials")
-        print (sys.exc_value)
-        sys.exit(1)
-    except paramiko.BadHostKeyException:
-        print ("ERROR: Bad host key. Check your known_hosts file")
-        print (sys.exc_value)
-        sys.exit(1)
-    except paramiko.PasswordRequiredException:
-        print ("ERROR: Password required. No ssh key in the agent?")
-        print (sys.exc_value)
-        sys.exit(1)
-    except:
-        print ("ERROR: Could not open ssh connection")
-        print (sys.exc_value)
-        sys.exit(1)
-        
-    global ssh 
-    ssh = client
-    global sftp
-    sftp = paramiko.SFTPClient.from_transport(client.get_transport())
-    print ("SSH connection established")
-    
-# push the thumbs to the upload host
-def upload_thumbs():
-    print ("## uploading thumbs ##")
-    
-    # check if ssh connection is open
-    if ssh == None or sftp == None:
-        connect_ssh()
-    thumbs_ext = {".gif",".jpg","_preview.jpg"}
-    for ext in thumbs_ext:
-        try:
-            sftp.put(output + thumb_path + local_filename_base + ext, upload_path + thumb_path + guid + ext)
-        except paramiko.SSHException:
-            print ("ERROR: could not upload thumb becaus of SSH problem")
-            print (sys.exc_value)
-            sys.exit(1)
-        except IOError:
-            print ("ERROR: could not create file in upload dir")
-            print (sys.exc_value)
-            sys.exit(1)
-            
-    print ("uploading thumbs done")
-
-#uploads a file from path relative to the output dir to the same path relative to the upload_dir
-def upload_file(filename, path):
-    print ("## uploading "+ path + filename + " ##")
-    
-    # check if ssh connection is open
-    if (ssh == None or sftp == None):
-        connect_ssh()
-    
-    try:
-        sftp.put(output + path + filename, upload_path + path + filename)
-    except paramiko.SSHException:
-        print ("ERROR: could not upload thumb becaus of SSH problem")
-        print (sys.exc_value)
-        sys.exit(1)
-    except IOError:
-        print ("ERROR: could not create file in upload dir")
-        print (sys.exc_value)
-        sys.exit(1)
-            
-    print ("uploading " + filename + " done")
-    
 ################################# Here be dragons #################################
 def iCanHazTicket():
-    print("getting ticket from " + url)
-    print("=========================================")
+    logging.info("getting ticket from " + url)
+    logging.info("=========================================")
     
-
     #check if we got a new ticket
     global ticket_id
     ticket_id = assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
     if ticket_id != False:
         #copy ticket details to local variables
-        #TODO make this nice
-        print("Ticket ID:" + str(ticket_id))
+        logging.info("Ticket ID:" + str(ticket_id))
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
         global acronym
         global local_filename
@@ -273,6 +210,8 @@ def iCanHazTicket():
         global title
         global subtitle 
         global description
+        global download_base_url
+        
         guid = ticket['Fahrplan.GUID']
         slug = ticket['Fahrplan.Slug']
         slug_c = slug.replace(":","_")    
@@ -284,6 +223,7 @@ def iCanHazTicket():
         local_filename_base =  ticket['Fahrplan.ID']
         video_base = str(ticket['Publishing.Path'])
         output = str(ticket['Publishing.Path']) + "/"+ str(thumb_path)
+        download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
         title = ticket['Fahrplan.Title']
@@ -292,36 +232,42 @@ def iCanHazTicket():
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
         #debug
-        print("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
     else:
-        print("No ticket for this task, exiting")
+        logging.warn("No ticket for this task, exiting")
         sys.exit(0);
 
 def eventFromC3TT():
-    print("creating event on " + api_url)
-    print("=========================================")
+    logging.info("creating event on " + api_url)
+    logging.info("=========================================")
     #create the event on media
-    if make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
+    if make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
         mime_type = get_mime_type_from_slug();
         folder = get_folder_from_slug()
         if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
             #publishing has failed => set ticket failed
             setTicketFailed(ticket_id, "Error_during_publishing", url, group, host, secret)
             #debug 
-            print("Publishing failed")
+            logging.error("Publishing failed")
             sys.exit()
           
         # set ticket done
         else:
             #debug
-            print("set ticket done")
+            logging.info("set ticket done")
             setTicketDone(ticket_id, url, group, host, secret)
     else:
-        print("event creation on media.ccc.de failed")
+        logging.error("event creation on media.ccc.de failed")
         setTicketFailed(ticket_id, "Error_during_creation_of_event_on_media", url, group, host, secret)
                      
 def auphonicFromTracker():
-    print("Pushing file to Auphonic")
+    logging.info("Pushing file to Auphonic")
 
 iCanHazTicket()    
 eventFromC3TT()
+#def test():
+#  logging.info("foobar")
+
+#logging.info("foo")
+#test()
+

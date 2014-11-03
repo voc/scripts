@@ -1,4 +1,10 @@
 [general]
+#data source for publishing: c3tt, CMD, file (file meta data)
+source = "c3tt"
+#destination of the publishing: media (media.ccc.de), auphonic,
+dest = "media"
+#run with debug output
+debug = 'true'
 # base dir for video input files (local) in case of C3TT this will be overwritten!!
 video_base = "/mnt/" 
 # base dir for video output files (local) in case of C3TT this will be overwritten!!!
@@ -10,34 +16,32 @@ post = "postprocessing/"
 thumb_path = "thumbs/"
 
 [C3Tracker]
-group = 6tT8qhDf0ihz4Epr6NPqzpH3QRNK7w0Y
-secret =  rLUzuXDj2X1Pu93itfGKdZ5SHxuF7G21
+group = <key>
+secret =  <key>
 #only set host if you don't wont to use local maschine name
 host = None
-url = https://195.54.164.166/
+url = <server>
 from_state = encoding
 to_state = releasing
 
 [media.ccc.de]
 ## API informations
-api_url =  https://api.media.ccc.de/api/
-api_key =  bd159de3c66f3969c8eb4f729c415e26
+api_url =  <api-url>
+api_key =  <key>
 ## release host information
 # SFTP data
-upload_host = live.ber.c3voc.de
-upload_user = voc
-upload_pw =  voc 
+upload_host = <ftp-target>
+upload_user = <user>
+upload_pw =  <pw> 
 #it is recommended to use key login. PW musts be set but can be random
 upload_path = /srv/releases/public/
-download_thumb_base_url = http://live.berlin.voc.media.ccc.de/releases/public/thumbs/
-download_base_url = http://live.berlin.voc.media.ccc.de/releases/public/
+download_thumb_base_url = <url>
+download_base_url = <base_url>
 
 [conference]
-rec_path = events/easterhegg2014
-image_path = events/easterhegg2014
-webgen_loc = events/easterhegg2014
-#currently 4:3 and 16:9 are supported by the media API
-aspect = 16:9
+rec_path = <path>
+image_path = <path>
+webgen_loc = <webgen>
 
 [env]
 # base dir for video input files (local)

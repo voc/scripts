@@ -22,35 +22,37 @@ import requests
 import json
 import sys
 import os
+import logging
+logger = logging.getLogger()
 
-
-def make_thumbs(video_base, local_filename, aspect, output):
+def make_thumbs(video_base, local_filename, output):
     debug = 1
-    print(("## generating thumbs for "  + video_base + local_filename + " ##"))
-    if (aspect == "16:9"):
-        print("making 16:9 thumbs")
-        if debug > 0:
-            print(video_base)
-            print("DEBUG: sh postprocessing/generate_thumbs_wide16-9.sh " + video_base + local_filename + " " + output)
-        result = subprocess.check_output(["postprocessing/generate_thumbs_wide16-9.sh" , video_base + local_filename , output])
-        print(result)
-    if (aspect == "4:3"):
-        if debug > 0:
-            print("sh postprocessing/generate_thumbs.sh" + video_base + local_filename + " " + output)
-        print("making 4:3 thumbs")
-        result = subprocess.check_output(["postprocessing/generate_thumbs.sh" , video_base + local_filename , output])
-    print("thumbs created")
+    
+    logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
+
+    try:
+        subprocess.check_call(["postprocessing/generate_thumb_autoselect_compatible.sh", video_base + local_filename, output])
+    except subprocess.CalledProcessError as err:
+        logger.error("A fault occurred")
+        logger.error("Fault code: %d" % err.returncode)
+        logger.error("Fault string: %s" % err.output)
+        logger.error("Command %s" % err.cmd)
+        return False
+         
+    logger.info("thumbs created")
+    return True
     
 # make a new event on media
-def make_event(api_url, download_thumb_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, aspect, output, slug, title, subtitle, description):
-    print(("## generating new event on " + api_url + " ##"))
+def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
+    logger.info(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
-    make_thumbs(video_base, local_filename, aspect, output)
-        
+    if not make_thumbs(video_base, local_filename, output):
+        return False
+            
     # prepare variables for api call
-    thumb_url = download_thumb_base_url + local_filename_base + ".jpg"
-    poster_url = download_thumb_base_url + local_filename_base + "_preview.jpg"
+    thumb_url = download_base_url + "thumbs/" + local_filename_base + ".jpg"
+    poster_url = download_base_url + "thumbs/" + local_filename_base + "_preview.jpg"
     url = api_url + 'events'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
@@ -63,35 +65,35 @@ def make_event(api_url, download_thumb_base_url, local_filename, local_filename_
 	       'subtitle' : subtitle,
 	       'description' : description
 	      }     
-    print(payload)
+    logger.debug(payload)
 
     #call media api (and ignore SSL this should be fixed on media site)
     try:
-        print("api url: " + url)
+        logger.debug("api url: " + url)
         r = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
     except requests.packages.urllib3.exceptions.MaxRetryError as err:
-        print("Error during creating of event: " + str(err))
+        logger.error("Error during creating of event: " + str(err))
         return False
 #     except:
-#         print ("Unhandelt ssl / retry problem")
+#         logger.error("Unhandelt ssl / retry problem")
 #         return False
     
     if r.status_code == 200 or r.status_code == 201:
-        print("new event created")
+        logger.debug(r.text)
+        logger.info("new event created")
         return True
     else:
         if r.status_code == 422:
-            print("event already exists. => publishing")
+            logger.info("event already exists. => publishing")
             return True
         else:
-            print(("ERROR: Could not add event: " + str(r.status_code) + " " + r.text))
+            logger.error(("ERROR: Could not add event: " + str(r.status_code) + " " + r.text))
             return False
 
 # get filesize and length of the media file
 def get_file_details(local_filename, video_base):
     if local_filename == None:
-        print("Error: No filename supplied.")
-        sys.exit(1)
+        logger.error("Error: No filename supplied.")
     
     if os.path.exists(video_base + local_filename):
         global filesize    
@@ -102,22 +104,22 @@ def get_file_details(local_filename, video_base):
             global r
             r = subprocess.check_output('ffprobe -print_format flat -show_format -loglevel quiet ' + video_base + local_filename +' 2>&1 | grep format.duration | cut -d= -f 2 | sed -e "s/\\"//g" -e "s/\..*//g" ', shell=True)
         except:
-            print("ERROR: could not get duration " + exc_value)
+            logger.error("ERROR: could not get duration " + exc_value)
         #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
         global length
         length = int(r.decode())
         if length == 0:
-            print("Error: file length is 0")
+            logger.error("Error: file length is 0")
         else:
-            print("filesize: " + str(filesize) + " length: " + str(length))
+            logger.debug("filesize: " + str(filesize) + " length: " + str(length))
             return [filesize,length]
     else:
-        print("Error: " + video_base + local_filename + " not found")
+        logger.error("Error: " + video_base + local_filename + " not found")
         sys.exit(1)
 
 # publish a file on media
 def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base):
-    print(("## publishing "+ filename + " to " + api_url + " ##"))
+    logger.info(("## publishing "+ filename + " to " + api_url + " ##"))
     
     #orig_file_url = download_base_url + codecs[args.codecs]['path'] + filename
     orig_file_url = download_base_url + local_filename 
@@ -137,21 +139,22 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
                               'length' : str(ret[1])
                               }
                }
-    print(payload)
+    logger.debug(payload)
     try:
         r = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
     except requests.exceptions.SSLError:
-        print("ssl cert error")
+        logger.error("ssl cert error")
+        return False
     except requests.packages.urllib3.exceptions.MaxRetryError as err:
-        print("Error during creating of event: " + str(err))
+        logger.error("Error during creating of event: " + str(err))
         return False
     except:
-        print ("Unhandelt ssl / retry problem")
+        logger.error ("Unhandelt ssl / retry problem")
         return False
     
     if r.status_code != 200 and r.status_code != 201:
-            print(("ERROR: Could not publish talk: " + str(r.status_code) + " " + r.text))
-            return False
+        logger.error(("ERROR: Could not publish talk: " + str(r.status_code) + " " + r.text))
+        return False
     
-    print(("publishing " + filename + " done"))
+    logger.info(("publishing " + filename + " done"))
     return True
