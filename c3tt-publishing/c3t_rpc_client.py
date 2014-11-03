@@ -65,7 +65,7 @@ def C3TClient(url, method, group, host, secret, args):
     args.append(hash.hexdigest())
     
     #### create xmlrpc client
-    logger.info('creating XML RPC proxy: ' + url + "?group=" + group + "&hostname=" + host)
+    logger.debug('creating XML RPC proxy: ' + url + "?group=" + group + "&hostname=" + host)
     try:
         proxy = xmlrpc.client.ServerProxy(url + "?group=" + group + "&hostname=" + host);
     except xmlrpc.client.Fault as err:
@@ -129,7 +129,7 @@ def assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
     if xml == False:
         return False
     else:
-        print(xml)
+        logger.debug(xml)
         return xml['id']
 
 ### get ticket properties 

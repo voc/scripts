@@ -35,7 +35,7 @@ from media_ccc_de_api_client import *
 from auphonic_client import *
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 logging.addLevelName( logging.WARNING, "\033[1;33m%s\033[1;0m" % logging.getLevelName(logging.WARNING))
 logging.addLevelName( logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
@@ -79,7 +79,7 @@ if source == "c3tt":
     from_state = config['C3Tracker']['from_state']
     to_state = config['C3Tracker']['to_state']
 
-if dest == 'media':
+if True:
     ################### media.ccc.de #################
     #API informations
     api_url =  config['media.ccc.de']['api_url']
@@ -264,7 +264,7 @@ def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
 
 iCanHazTicket()    
-#eventFromC3TT()
+eventFromC3TT()
 #def test():
 #  logging.info("foobar")
 

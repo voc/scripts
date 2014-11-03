@@ -31,11 +31,12 @@ def make_thumbs(video_base, local_filename, output):
     logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
 
     try:
-        subprocess.check_call(["postprocessing/generate_thumbs_wide16-9.sh", video_base + local_filename, ouput])
-    except CalledProcessError as err:
+        subprocess.check_call(["postprocessing/generate_thumb_autoselect_compatible.sh", video_base + local_filename, output])
+    except subprocess.CalledProcessError as err:
         logger.error("A fault occurred")
-        logger.error("Fault code: %d" % err.faultCode)
-        loggor.error("Fault string: %s" % err.faultString)
+        logger.error("Fault code: %d" % err.returncode)
+        logger.error("Fault string: %s" % err.output)
+        logger.error("Command %s" % err.cmd)
         return False
          
     logger.info("thumbs created")
@@ -50,8 +51,8 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
         return False
             
     # prepare variables for api call
-    thumb_url = download__base_url + "thumbs" + local_filename_base + ".jpg"
-    poster_url = download_base_url + "thumbs" + local_filename_base + "_preview.jpg"
+    thumb_url = download_base_url + "thumbs/" + local_filename_base + ".jpg"
+    poster_url = download_base_url + "thumbs/" + local_filename_base + "_preview.jpg"
     url = api_url + 'events'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
@@ -78,6 +79,7 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
 #         return False
     
     if r.status_code == 200 or r.status_code == 201:
+        logger.debug(r.text)
         logger.info("new event created")
         return True
     else:
@@ -102,14 +104,14 @@ def get_file_details(local_filename, video_base):
             global r
             r = subprocess.check_output('ffprobe -print_format flat -show_format -loglevel quiet ' + video_base + local_filename +' 2>&1 | grep format.duration | cut -d= -f 2 | sed -e "s/\\"//g" -e "s/\..*//g" ', shell=True)
         except:
-            print("ERROR: could not get duration " + exc_value)
+            logger.error("ERROR: could not get duration " + exc_value)
         #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
         global length
         length = int(r.decode())
         if length == 0:
-            print("Error: file length is 0")
+            logger.error("Error: file length is 0")
         else:
-            print("filesize: " + str(filesize) + " length: " + str(length))
+            logger.debug("filesize: " + str(filesize) + " length: " + str(length))
             return [filesize,length]
     else:
         logger.error("Error: " + video_base + local_filename + " not found")
@@ -137,7 +139,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
                               'length' : str(ret[1])
                               }
                }
-    print(payload)
+    logger.debug(payload)
     try:
         r = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
     except requests.exceptions.SSLError:
