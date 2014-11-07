@@ -35,7 +35,7 @@ from media_ccc_de_api_client import *
 from auphonic_client import *
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 logging.addLevelName( logging.WARNING, "\033[1;33m%s\033[1;0m" % logging.getLevelName(logging.WARNING))
 logging.addLevelName( logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
@@ -219,7 +219,7 @@ def iCanHazTicket():
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
         title = ticket['Fahrplan.Title']
 #        local_filename = ticket['Fahrplan.ID'] + "-" + ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
-        local_filename = ticket['Fahrplan.ID'] + "." + ticket['EncodingProfile.Extension']
+        local_filename = str(ticket['Fahrplan.ID']) + "." + ticket['EncodingProfile.Extension']
         local_filename_base =  ticket['Fahrplan.ID']
         video_base = str(ticket['Publishing.Path'])
         output = str(ticket['Publishing.Path']) + "/"+ str(thumb_path)
