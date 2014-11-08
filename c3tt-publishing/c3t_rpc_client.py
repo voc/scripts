@@ -72,22 +72,22 @@ def C3TClient(url, method, group, host, secret, args):
         logger.error("A fault occurred")
         logger.error("Fault code: %d" % err.faultCode)
         logger.error("Fault string: %s" % err.faultString)
-        sys.exit()
+        sys.exit(-1)
     except xmlrpc.client.ProtocolError as err:
         logger.error("A protocol error occurred")
         logger.error("URL: %s" % err.url)
         logger.error("HTTP/HTTPS headers: %s" % err.headers)
         logger.error("Error code: %d" % err.errcode)
         logger.error("Error message: %s" % err.errmsg)
-        sys.exit()
+        sys.exit(-1)
     except socket.gaierror as err:
         logger.error("A socket error occurred")
         logger.error(err)
-        sys.exit()
+        sys.exit(-1)
     except xmlrpc.client.ProtocolError as err:
         logger.error("A Protocol occurred")
         logger.error(err)
-        sys.exit()
+        sys.exit(-1)
     
     #### call the given method with args
     try:
@@ -96,19 +96,19 @@ def C3TClient(url, method, group, host, secret, args):
     except xml.parsers.expat.ExpatError as err:
         logger.error("A expat err occured")
         logger.error(err)
-        sys.exit()
+        sys.exit(-1)
     except xmlrpc.client.Fault as err:
         logger.error("A fault occurred")
         logger.error("Fault code: %d" % err.faultCode)
         logger.error("Fault string: %s" % err.faultString)
-        sys.exit()
+        sys.exit(-1)
     except xmlrpc.client.ProtocolError as err:
         logger.error("A protocol error occurred")
         logger.error("URL: %s" % err.url)
         logger.error("HTTP/HTTPS headers: %s" % err.headers)
         logger.error("Error code: %d" % err.errcode)
         logger.error("Error message: %s" % err.errmsg)
-        sys.exit()
+        sys.exit(-1)
     #### return the result
     return result
 

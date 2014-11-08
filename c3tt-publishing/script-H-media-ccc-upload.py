@@ -242,7 +242,7 @@ def iCanHazTicket():
             setTicketFailed(ticket_id, "Output path does not exist", url, group, host, secret)
             sys.exit(-1)
         else: 
-            if not os.access(ouput, os.W_OK):
+            if not os.access(output, os.W_OK):
                 logging.error("Output path is not writable")
                 setTicketFailed(ticket_id, "Output path is not writable", url, group, host, secret)
                 sys.exit(-1)
@@ -254,12 +254,13 @@ def eventFromC3TT():
     logging.info("creating event on " + api_url)
     logging.info("=========================================")
     #create the event on media
-    if make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
+    err = ""
+    if make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, err):
         mime_type = get_mime_type_from_slug();
         folder = get_folder_from_slug()
-        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
+        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base,err)):
             #publishing has failed => set ticket failed
-            setTicketFailed(ticket_id, "Error_during_publishing", url, group, host, secret)
+            setTicketFailed(ticket_id, "Publishing failed: \n" + err, url, group, host, secret)
             logging.error("Publishing failed")
             sys.exit(-1)
           
@@ -270,8 +271,8 @@ def eventFromC3TT():
             setTicketDone(ticket_id, url, group, host, secret)
             sys.exit(0)
     else:
-        logging.error("event creation on media.ccc.de failed")
-        setTicketFailed(ticket_id, "Error_during_creation_of_event_on_media", url, group, host, secret)
+        logging.error("Creating event failed")
+        setTicketFailed(ticket_id, "Creating event failed: \n" + err, url, group, host, secret)
         sys.exit(-1)
                      
 def auphonicFromTracker():
