@@ -25,9 +25,8 @@ import os
 import logging
 logger = logging.getLogger()
 
-def make_thumbs(video_base, local_filename, output):
-    debug = 1
-    
+#generate thumbnails for media.ccc.de
+def make_thumbs(video_base, local_filename, output):    
     logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
 
     try:
@@ -97,28 +96,27 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
 def get_file_details(local_filename, video_base):
     if local_filename == None:
         logger.error("Error: No filename supplied.")
-    
-    if os.path.exists(video_base + local_filename):
-        global filesize    
-        filesize = os.stat(video_base + local_filename).st_size
-        filesize = int(filesize / 1024 / 1024)
+        return False
         
-        try:
-            global r
-            r = subprocess.check_output('ffprobe -print_format flat -show_format -loglevel quiet ' + video_base + local_filename +' 2>&1 | grep format.duration | cut -d= -f 2 | sed -e "s/\\"//g" -e "s/\..*//g" ', shell=True)
-        except:
-            logger.error("ERROR: could not get duration " + exc_value)
-        #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
-        global length
-        length = int(r.decode())
-        if length == 0:
-            logger.error("Error: file length is 0")
-        else:
-            logger.debug("filesize: " + str(filesize) + " length: " + str(length))
-            return [filesize,length]
+    global filesize    
+    filesize = os.stat(video_base + local_filename).st_size
+    filesize = int(filesize / 1024 / 1024)
+    
+    try:
+        global r
+        r = subprocess.check_output('ffprobe -print_format flat -show_format -loglevel quiet ' + video_base + local_filename +' 2>&1 | grep format.duration | cut -d= -f 2 | sed -e "s/\\"//g" -e "s/\..*//g" ', shell=True)
+    except:
+        logger.error("ERROR: could not get duration " + exc_value)
+        return False
+    #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
+    global length
+    length = int(r.decode())
+    if length == 0:
+        logger.error("Error: file length is 0")
     else:
-        logger.error("Error: " + video_base + local_filename + " not found")
-        sys.exit(1)
+        logger.debug("filesize: " + str(filesize) + " length: " + str(length))
+        return [filesize,length]
+    
 
 # publish a file on media
 def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base):

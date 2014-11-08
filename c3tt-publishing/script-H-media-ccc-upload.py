@@ -218,7 +218,6 @@ def iCanHazTicket():
         acronym = ticket['Meta.Acronym']
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
         title = ticket['Fahrplan.Title']
-#        local_filename = ticket['Fahrplan.ID'] + "-" + ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
         local_filename = str(ticket['Fahrplan.ID']) + "." + ticket['EncodingProfile.Extension']
         local_filename_base =  ticket['Fahrplan.ID']
         video_base = str(ticket['Publishing.Path'])
@@ -233,6 +232,20 @@ def iCanHazTicket():
                 description = ticket['Fahrplan.Abstract']
         #debug
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
+        
+        if not os.path.isfile(video_base + local_filename):
+            logging.error("Source file does not exist")
+            setTicketFailed(ticket_id, "Source file does not exist", url, group, host, secret)
+            sys.exit(-1)
+        if not os.path.exists(output):
+            logging.error("Output path does not exist")
+            setTicketFailed(ticket_id, "Output path does not exist", url, group, host, secret)
+            sys.exit(-1)
+        else: 
+            if not os.access(ouput, os.W_OK):
+                logging.error("Output path is not writable")
+                setTicketFailed(ticket_id, "Output path is not writable", url, group, host, secret)
+                sys.exit(-1)
     else:
         logging.warn("No ticket for this task, exiting")
         sys.exit(0);
@@ -247,27 +260,23 @@ def eventFromC3TT():
         if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)):
             #publishing has failed => set ticket failed
             setTicketFailed(ticket_id, "Error_during_publishing", url, group, host, secret)
-            #debug 
             logging.error("Publishing failed")
-            sys.exit()
+            sys.exit(-1)
           
         # set ticket done
         else:
             #debug
             logging.info("set ticket done")
             setTicketDone(ticket_id, url, group, host, secret)
+            sys.exit(0)
     else:
         logging.error("event creation on media.ccc.de failed")
         setTicketFailed(ticket_id, "Error_during_creation_of_event_on_media", url, group, host, secret)
+        sys.exit(-1)
                      
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
 
 iCanHazTicket()    
 eventFromC3TT()
-#def test():
-#  logging.info("foobar")
-
-#logging.info("foo")
-#test()
 
