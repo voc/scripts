@@ -47,12 +47,15 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
     logger.info(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
-    if not make_thumbs(video_base, local_filename, output):
-        return False
+    if not os.path.isfile(output + "/" + str(local_filename_base) + ".jpg"):
+        if not make_thumbs(video_base, local_filename, output):
+            return False
+    else:
+        logger.info("thumb exists skipping")
             
     # prepare variables for api call
-    thumb_url = download_base_url + "thumbs/" + local_filename_base + ".jpg"
-    poster_url = download_base_url + "thumbs/" + local_filename_base + "_preview.jpg"
+    thumb_url = download_base_url + "thumbs/" + str(local_filename_base) + ".jpg"
+    poster_url = download_base_url + "thumbs/" + str(local_filename_base) + "_preview.jpg"
     url = api_url + 'events'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
