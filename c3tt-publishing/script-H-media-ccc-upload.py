@@ -234,17 +234,17 @@ def iCanHazTicket():
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
         
         if not os.path.isfile(video_base + local_filename):
-            logging.error("Source file does not exist")
-            setTicketFailed(ticket_id, "Source file does not exist", url, group, host, secret)
+            logging.error("Source file does not exist (%s)" % (video_base + local_filename))
+            setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
             sys.exit(-1)
         if not os.path.exists(output):
-            logging.error("Output path does not exist")
-            setTicketFailed(ticket_id, "Output path does not exist", url, group, host, secret)
+            logging.error("Output path does not exist (%s)" % (output))
+            setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
             sys.exit(-1)
         else: 
             if not os.access(output, os.W_OK):
-                logging.error("Output path is not writable")
-                setTicketFailed(ticket_id, "Output path is not writable", url, group, host, secret)
+                logging.error("Output path is not writable (%s)" % (output))
+                setTicketFailed(ticket_id, "Output path is not writable (%s)" % (output), url, group, host, secret)
                 sys.exit(-1)
     else:
         logging.warn("No ticket for this task, exiting")
