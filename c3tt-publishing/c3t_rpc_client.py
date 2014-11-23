@@ -132,9 +132,9 @@ def assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
         return xml['id']
 
 ### get ticket properties 
-def getTicketProperties(id ,url, group, host, secret):
+def getTicketProperties(id, url, group, host, secret):
     tmp_args = [id]
-    xml = open_rpc("C3TT.getTicketProperties",tmp_args, url, group, host, secret)
+    xml = open_rpc("C3TT.getTicketProperties", tmp_args, url, group, host, secret)
     if xml == False:
         logger.error("no xml in answer")
         return None
