@@ -56,7 +56,7 @@ def C3TClient(url, method, group, host, secret, args):
     
     ##### quote URL and generate the hash     
     #hash signature
-    sig_args_enc = urllib.parse.quote_plus(sig_args)
+    sig_args_enc = urllib.parse.quote_plus(sig_args, "~")
         
     #### generate the hmac hash with key
     hash =  hmac.new(bytes(secret, 'utf-8'), bytes(sig_args_enc, 'utf-8'), hashlib.sha256)
