@@ -49,14 +49,21 @@ def C3TClient(url, method, group, host, secret, args):
     if len(args) > 0:
         i = 0
         while i < len(args):
-            sig_args = str(sig_args) + str(args[i])
+            arg = args[i]
+            if isinstance(arg, dict):
+                kvs = []
+                for k, v in args[i].items():
+                    kvs.append('['+k+']='+v)
+                arg = '&'.join(kvs)
+
+            sig_args = str(sig_args) + str(arg)
             if i < (len(args) -1):
                 sig_args = sig_args + "&" 
             i = i + 1
     
     ##### quote URL and generate the hash     
     #hash signature
-    sig_args_enc = urllib.parse.quote(sig_args, "~")
+    sig_args_enc = urllib.parse.quote(sig_args, "~=")
         
     #### generate the hmac hash with key
     hash =  hmac.new(bytes(secret, 'utf-8'), bytes(sig_args_enc, 'utf-8'), hashlib.sha256)
@@ -130,6 +137,16 @@ def assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
         return False
     else:
         return xml['id']
+
+### set ticket properties 
+def setTicketProperties(id, properties, url, group, host, secret):
+    tmp_args = [id, properties]
+    xml = open_rpc("C3TT.setTicketProperties", tmp_args, url, group, host, secret)
+    if xml == False:
+        logger.error("no xml in answer")
+        return False
+    else:
+        return True
 
 ### get ticket properties 
 def getTicketProperties(id, url, group, host, secret):
