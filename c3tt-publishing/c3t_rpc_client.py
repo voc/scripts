@@ -129,7 +129,6 @@ def assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
     if xml == False:
         return False
     else:
-        logger.debug(xml)
         return xml['id']
 
 ### get ticket properties 
@@ -140,7 +139,6 @@ def getTicketProperties(id ,url, group, host, secret):
         logger.error("no xml in answer")
         return None
     else:
-        logger.debug(xml)
         return xml
 
 ### set Ticket status on done
