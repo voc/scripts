@@ -146,7 +146,7 @@ def uploadVideo(ticket, accessToken, channelId):
     # TODO playlist by Album, Track, Type, ...
 
     logger.info('successfully uploaded video as %s', youtubeurl)
-    return youtubeurl
+    return youtubeurl # FIX Sig-Gen with ? or = in hash-value
 
 
 def getFreshToken(refreshToken, clientId, clientSecret):
