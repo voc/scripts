@@ -36,8 +36,10 @@ def publish_youtube(ticket, clientId, clientSecret):
 
     accessToken = getFreshToken(ticket['Publishing.YouTube.Token'], clientId, clientSecret)
     channelId = getChannelId(accessToken)
-    videoUrl = uploadVideo(ticket, accessToken, channelId)
+    videoId = uploadVideo(ticket, accessToken, channelId)
+    addToPlaylists(ticket, videoId, accessToken, channelId)
 
+    videoUrl = 'https://www.youtube.com/watch?v='+videoId
     logger.info("successfully published Ticket to %s" % videoUrl)
     return videoUrl
 
@@ -53,15 +55,12 @@ def uploadVideo(ticket, accessToken, channelId):
         },
         'status':
         {
-            'privacyStatus': 'private',
+            'privacyStatus': ticket.get('Publishing.YouTube.Privacy', 'private'),
             'embeddable': True,
             'publicStatsViewable': True,
             'license': 'creativeCommon',
         },
     }
-
-    if 'Publishing.YouTube.Privacy' in ticket:
-        metadata['snippet']['privacyStatus'] = ticket['Publishing.YouTube.Privacy']
 
     if 'Publishing.YouTube.Tags' in ticket:
         metadata['snippet']['tags'] = ticket['Publishing.YouTube.Tags'].split(',')
@@ -139,14 +138,15 @@ def uploadVideo(ticket, accessToken, channelId):
             data=fp
         )
 
+        if 200 != r.status_code or 201 != r.status_code:
+            raise RuntimeError('uploading video failed with error-code %u: %s' % (r.status_code, r.text))
+
     video = r.json()
-    videoid = video['id']
-    youtubeurl = 'https://www.youtube.com/watch?v='+videoid
 
-    # TODO playlist by Album, Track, Type, ...
-
+    youtubeurl = 'https://www.youtube.com/watch?v='+video['id']
     logger.info('successfully uploaded video as %s', youtubeurl)
-    return youtubeurl # FIX Sig-Gen with ? or = in hash-value
+
+    return video['id']
 
 
 def getFreshToken(refreshToken, clientId, clientSecret):
@@ -162,11 +162,11 @@ def getFreshToken(refreshToken, clientId, clientSecret):
     )
 
     if 200 != r.status_code:
-        raise RuntimeError('Fetching a fresh authToken failed with error-code %u: %s' % (r.status_code, r.text))
+        raise RuntimeError('fetching a fresh authToken failed with error-code %u: %s' % (r.status_code, r.text))
 
     data = r.json()
     if not 'access_token' in data:
-        raise RuntimeError('Fetching a fresh authToken did not return a access_token: %s' % r.text)
+        raise RuntimeError('fetching a fresh authToken did not return a access_token: %s' % r.text)
 
     logger.info("successfully fetched Access-Token %s" % data['access_token'])
     return data['access_token']
@@ -186,10 +186,109 @@ def getChannelId(accessToken):
     )
 
     if 200 != r.status_code:
-        raise RuntimeError('Fetching a fresh authToken failed with error-code %u: %s' % (r.status_code, r.text))
+        raise RuntimeError('fetching a fresh authToken failed with error-code %u: %s' % (r.status_code, r.text))
 
     data = r.json()
     channel = data['items'][0]
 
     logger.info("successfully fetched Chanel-ID %s with name %s" % (channel['id'], channel['brandingSettings']['channel']['title']))
     return channel['id']
+
+
+def addToPlaylists(ticket, videoId, accessToken, channelId):
+    # TODO playlist by Album+Track, Album+Type, Album+Room, Album+Day
+
+    ticketPlaylists = [ticket['Meta.Album'],]
+    if 'Fahrplan.Track' in ticket:
+        ticketPlaylists.append('%s — Track %s' % (ticket['Meta.Album'], ticket['Fahrplan.Track']))
+
+    if 'Fahrplan.Type' in ticket:
+        ticketPlaylists.append('%s — Type %s' % (ticket['Meta.Album'], ticket['Fahrplan.Type']))
+
+    if 'Fahrplan.Day' in ticket:
+        ticketPlaylists.append('%s — Day %s' % (ticket['Meta.Album'], ticket['Fahrplan.Day']))
+
+    if 'Fahrplan.Room' in ticket:
+        ticketPlaylists.append('%s — Room %s' % (ticket['Meta.Album'], ticket['Fahrplan.Room']))
+
+    logger.debug('adding video to the following playlists: %s', ticketPlaylists)
+    logger.debug('fetching list of playlists')
+    r = requests.get(
+        'https://www.googleapis.com/youtube/v3/playlists',
+        params={
+            'part': 'id,snippet',
+            'channelId': channelId,
+        },
+        headers={
+            'Authorization': 'Bearer '+accessToken,
+        }
+    )
+
+    if 200 != r.status_code:
+        raise RuntimeError('fetching list of playlists failed with error-code %u: %s' % (r.status_code, r.text))
+
+    playlists = r.json()
+    playlistIds = {}
+    for item in playlists['items']:
+        if item['snippet']['title'] in ticketPlaylists:
+            playlistIds[ item['snippet']['title'] ] = item['id']
+
+    logger.debug('found existing playlists with matching names: %s' % (playlistIds,))
+    for name in ticketPlaylists:
+        if not name in playlistIds:
+            logger.debug('creating playlist "%s"' % name)
+            r = requests.post(
+                'https://www.googleapis.com/youtube/v3/playlists',
+                params={
+                    'part': 'snippet,status',
+                },
+                headers={
+                    'Authorization': 'Bearer '+accessToken,
+                    'Content-Type': 'application/json; charset=UTF-8',
+                },
+                data=json.dumps({
+                    "status": {
+                        "privacyStatus": "private"
+                    },
+                    "snippet": {
+                        "title": name
+                    }
+                })
+            )
+
+            if 200 != r.status_code:
+                raise RuntimeError('creating playlist failed with error-code %u: %s' % (r.status_code, r.text))
+
+            playlist = r.json()
+            playlistIds[name] = playlist['id']
+            logger.info('created playlist "%s" as %s' % (name, playlist['id']))
+
+    logger.debug('final list of playlists add the videos to is: %s' % (playlistIds,))
+    for name in playlistIds:
+        logger.debug('adding video to playlist "%s" (%s)' % (name, playlistIds[name]))
+        s = json.dumps({
+            "snippet": {
+                "playlistId": playlistIds[name],
+                "resourceId": {
+                  "kind": 'youtube#video',
+                  "videoId": videoId,
+                }
+            }
+        })
+        print(s)
+        r = requests.post(
+            'https://www.googleapis.com/youtube/v3/playlistItems',
+            params={
+                'part': 'snippet',
+            },
+            headers={
+                'Authorization': 'Bearer '+accessToken,
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+            data=s
+        )
+
+        if 200 != r.status_code:
+            raise RuntimeError('adding video to playlist failed with error-code %u: %s' % (r.status_code, r.text))
+
+        logger.info('successfully added video to playlist "%s" (%s)' % (name, playlistIds[name]))
