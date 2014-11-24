@@ -38,6 +38,10 @@ upload_path = /srv/releases/public/
 download_thumb_base_url = <url>
 download_base_url = <base_url>
 
+[youtube]
+secret = <youtube-api-secret>
+client_id <youtube-client-id>
+
 [conference]
 rec_path = <path>
 image_path = <path>
