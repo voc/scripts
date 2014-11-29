@@ -191,12 +191,7 @@ def choose_target_from_slug():
     logging.debug("profile slug" + profile_slug)
     if profile_slug == "h264-HD-de" or profile_slug == "h264-HD-en":
         logging.debug("publising on youtube")
-        try:
-            youtubeFromTracker()
-        except RuntimeError as err:
-            logging.error("publishing on youtube failed")
-            setTicketFailed(ticket_id, "publishing on youtube failed: \n" + str(err), url, group, host, secret)
-            sys.exit(-1)
+        youtubeFromTracker()
     else:
         logging.debug("publising on media")
         mediaFromTracker()
