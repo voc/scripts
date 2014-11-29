@@ -4,7 +4,7 @@ source = "c3tt"
 #destination of the publishing: media (media.ccc.de), auphonic,
 dest = "media"
 #run with debug output
-debug = 'true'
+debug = INFO
 # base dir for video input files (local) in case of C3TT this will be overwritten!!
 video_base = "/mnt/" 
 # base dir for video output files (local) in case of C3TT this will be overwritten!!!
