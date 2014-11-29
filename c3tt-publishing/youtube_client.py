@@ -27,7 +27,7 @@
 import logging, requests, json, mimetypes, os
 logger = logging.getLogger()
 
-# publish a file on media
+# publish a file on youtube
 def publish_youtube(ticket, clientId, clientSecret):
     logger.info("publishing Ticket %s (%s) to youtube" % (ticket['Fahrplan.ID'], ticket['Fahrplan.Title']))
 
@@ -42,8 +42,6 @@ def publish_youtube(ticket, clientId, clientSecret):
     videoUrl = 'https://www.youtube.com/watch?v='+videoId
     logger.info("successfully published Ticket to %s" % videoUrl)
     return videoUrl
-
-
 
 def uploadVideo(ticket, accessToken, channelId):
     metadata = {
@@ -148,7 +146,6 @@ def uploadVideo(ticket, accessToken, channelId):
 
     return video['id']
 
-
 def getFreshToken(refreshToken, clientId, clientSecret):
     logger.debug('fetching fresh Access-Token on behalf of the refreshToken %s' % refreshToken)
     r = requests.post(
@@ -171,7 +168,6 @@ def getFreshToken(refreshToken, clientId, clientSecret):
     logger.info("successfully fetched Access-Token %s" % data['access_token'])
     return data['access_token']
 
-
 def getChannelId(accessToken):
     logger.debug('fetching Channel-Info on behalf of the accessToken %s' % accessToken)
     r = requests.get(
@@ -193,7 +189,6 @@ def getChannelId(accessToken):
 
     logger.info("successfully fetched Chanel-ID %s with name %s" % (channel['id'], channel['brandingSettings']['channel']['title']))
     return channel['id']
-
 
 def addToPlaylists(ticket, videoId, accessToken, channelId):
     # TODO playlist by Album+Track, Album+Type, Album+Room, Album+Day

@@ -33,6 +33,7 @@ import logging
 from c3t_rpc_client import * 
 from media_ccc_de_api_client import *
 from auphonic_client import *
+from youtube_client import *
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -150,6 +151,7 @@ rpc_client = None
 title = None
 subtitle = None 
 description = None
+profileslug = None
 
 ################################## media.ccc.de related functions ##################################
 #TODO this only works with tracker and media, find a more generic way!!
@@ -185,6 +187,20 @@ def get_folder_from_slug():
   if profile_slug == 'opus':
     return "opus"    
 
+def choose_target_from_slug():
+    logging.debug("profile slug" + profile_slug)
+    if profile_slug == "h264-HD-de" or profile_slug == "h264-HD-en":
+        logging.debug("publising on youtube")
+        try:
+            youtubeFromTracker()
+        except RuntimeError as err:
+            logging.error("publishing on youtube failed")
+            setTicketFailed(ticket_id, "publishing on youtube failed: \n" + str(err), url, group, host, secret)
+            sys.exit(-1)
+    else:
+        logging.debug("publising on media")
+        mediaFromTracker()
+
 ################################# Here be dragons #################################
 def iCanHazTicket():
     logging.info("getting ticket from " + url)
@@ -197,6 +213,7 @@ def iCanHazTicket():
         #copy ticket details to local variables
         logging.info("Ticket ID:" + str(ticket_id))
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
+        logging.debug("Ticket:" + str(ticket))
         global acronym
         global local_filename
         global local_filename_base
@@ -250,34 +267,46 @@ def iCanHazTicket():
         logging.warn("No ticket for this task, exiting")
         sys.exit(0);
 
-def eventFromC3TT():
+def mediaFromTracker():
     logging.info("creating event on " + api_url)
     logging.info("=========================================")
-    #create the event on media
-    err = ""
-    if make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, err):
-        mime_type = get_mime_type_from_slug();
-        folder = get_folder_from_slug()
-        if(not publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base,err)):
-            #publishing has failed => set ticket failed
-            setTicketFailed(ticket_id, "Publishing failed: \n" + err, url, group, host, secret)
-            logging.error("Publishing failed")
-            sys.exit(-1)
-          
-        # set ticket done
-        else:
-            #debug
-            logging.info("set ticket done")
-            setTicketDone(ticket_id, url, group, host, secret)
-            sys.exit(0)
-    else:
+
+    #create a event on media
+    try:
+        make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
+    except RuntimeError as err:
         logging.error("Creating event failed")
-        setTicketFailed(ticket_id, "Creating event failed: \n" + err, url, group, host, secret)
+        setTicketFailed(ticket_id, "Creating event failed: \n" + str(err), url, group, host, secret)
         sys.exit(-1)
+    
+    #publish the media file on media
+    mime_type = get_mime_type_from_slug();
+    folder = get_folder_from_slug()    
+    try:
+        publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)
+    except RuntimeError as err:
+        setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+        logging.error("Publishing failed: \n" + str(err))
+        sys.exit(-1) 
+                 
+    # set ticket done
+    logging.info("set ticket done")
+    setTicketDone(ticket_id, url, group, host, secret)
                      
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
 
-iCanHazTicket()    
-eventFromC3TT()
+def youtubeFromTracker():
+    try:
+        youtubeUrl = publish_youtube(ticket, config['youtube']['secret'])
+        setTicketProperties(ticket_id, {'YouTube.Url': youtubeUrl}, url, group, host, secret)
+    except RuntimeError as err:
+        setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+        logging.error("Publishing failed: \n" + str(err))
+        sys.exit(-1)
+
+iCanHazTicket()
+choose_target_from_slug()    
+#mediaFromTracker()
+#youtubeFromTracker()
 
