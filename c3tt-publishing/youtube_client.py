@@ -136,7 +136,7 @@ def uploadVideo(ticket, accessToken, channelId):
             data=fp
         )
 
-        if 200 != r.status_code or 201 != r.status_code:
+        if 200 != r.status_code and 201 != r.status_code:
             raise RuntimeError('uploading video failed with error-code %u: %s' % (r.status_code, r.text))
 
     video = r.json()
