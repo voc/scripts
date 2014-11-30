@@ -24,6 +24,7 @@
 #         logging.error("Publishing failed: \n" + str(err))
 #         sys.exit(-1)
 
+from html.parser import HTMLParser
 import logging, requests, json, mimetypes, os
 logger = logging.getLogger()
 
@@ -48,8 +49,9 @@ def uploadVideo(ticket, accessToken, channelId):
         'snippet':
         {
             'title': str(ticket['Fahrplan.Title']),
-            'description': "%s\n\n%s" % (ticket['Fahrplan.Abstract'], ticket['Fahrplan.Person_list']),
+            'description': "%s\n\n%s" % (strip_tags(ticket.get('Fahrplan.Abstract', ticket.get('Fahrplan.Description', ''))), ticket.get('Fahrplan.Person_list', '')),
             'channelId': channelId,
+            'tags': []
         },
         'status':
         {
@@ -60,8 +62,26 @@ def uploadVideo(ticket, accessToken, channelId):
         },
     }
 
+    # if tags are set - copy them into the metadata dict
     if 'Publishing.YouTube.Tags' in ticket:
-        metadata['snippet']['tags'] = ticket['Publishing.YouTube.Tags'].split(',')
+        metadata['snippet']['tags'] = list(map(str.strip, ticket['Publishing.YouTube.Tags'].split(',')))
+
+    # if persons-list is set
+    if 'Fahrplan.Person_list' in ticket:
+        persons = ticket['Fahrplan.Person_list'].split(',')
+
+        # append person-names to tags
+        metadata['snippet']['tags'].extend(persons)
+
+        # prepend usernames if only 1 or 2 speaker
+        if len(persons) < 3:
+            metadata['snippet']['title'] = ', '.join(persons)+': '+str(ticket['Fahrplan.Title'])
+
+    # recure limit title length to 100 (youtube api conformity)
+    metadata['snippet']['title'] = metadata['snippet']['title'].replace('<', '(').replace('>', ')')
+    metadata['snippet']['title'] = metadata['snippet']['title'][:100]
+
+
 
     # 1 => Film & Animation
     # 2 => Autos & Vehicles
@@ -97,7 +117,7 @@ def uploadVideo(ticket, accessToken, channelId):
     if 'Publishing.YouTube.Category' in ticket:
         metadata['snippet']['categoryId'] = int(ticket['Publishing.YouTube.Category'])
 
-    localfile = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "." + ticket['EncodingProfile.Extension']
+    localfile = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
     (mimetype, encoding) = mimetypes.guess_type(localfile)
     size = os.stat(localfile).st_size
 
@@ -270,7 +290,7 @@ def addToPlaylists(ticket, videoId, accessToken, channelId):
                 }
             }
         })
-        print(s)
+
         r = requests.post(
             'https://www.googleapis.com/youtube/v3/playlistItems',
             params={
@@ -287,3 +307,19 @@ def addToPlaylists(ticket, videoId, accessToken, channelId):
             raise RuntimeError('adding video to playlist failed with error-code %u: %s' % (r.status_code, r.text))
 
         logger.info('successfully added video to playlist "%s" (%s)' % (name, playlistIds[name]))
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
