@@ -230,7 +230,7 @@ def iCanHazTicket():
         acronym = ticket['Meta.Acronym']
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
         title = ticket['Fahrplan.Title']
-        local_filename = str(ticket['Fahrplan.ID']) + "." + ticket['EncodingProfile.Extension']
+        local_filename = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
         local_filename_base =  ticket['Fahrplan.ID']
         video_base = str(ticket['Publishing.Path'])
         output = str(ticket['Publishing.Path']) + "/"+ str(thumb_path)
