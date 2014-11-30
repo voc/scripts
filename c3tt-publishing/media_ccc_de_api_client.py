@@ -130,7 +130,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     
     # make sure we have the file size and length
     ret = []
-    if not get_file_details(local_filename, video_base, ret, err):
+    if not get_file_details(local_filename, video_base, ret):
         return False
        
     url = api_url + 'recordings'
