@@ -153,6 +153,7 @@ title = None
 subtitle = None 
 description = None
 profileslug = None
+folder = None
 
 ################################## media.ccc.de related functions ##################################
 #TODO this only works with tracker and media, find a more generic way!!
@@ -172,21 +173,21 @@ def get_mime_type_from_slug():
   if profile_slug == 'opus':
     return "audio/opus"
 
-def get_folder_from_slug():
-  if profile_slug == "h264-iprod":
-    return 'mp4-lq'
-  if profile_slug == "h264-sd":
-    return 'mp4-sd'
-  if profile_slug == "h264-hd":
-    return 'mp4-hd'
-  if profile_slug == 'webm':
-    return "webm"
-  if profile_slug == 'ogg':
-    return "ogg"
-  if profile_slug == 'mp3':
-    return "mp3"
-  if profile_slug == 'opus':
-    return "opus"    
+# def get_folder_from_slug():
+#   if profile_slug == "h264-iprod":
+#     return 'mp4-lq'
+#   if profile_slug == "h264-sd":
+#     return 'mp4-sd'
+#   if profile_slug == "h264-hd":
+#     return 'mp4-hd'
+#   if profile_slug == 'webm':
+#     return "webm"
+#   if profile_slug == 'ogg':
+#     return "ogg"
+#   if profile_slug == 'mp3':
+#     return "mp3"
+#   if profile_slug == 'opus':
+#     return "opus"    
 
 def choose_target_from_slug():
     logging.debug("profile slug" + profile_slug)
@@ -225,6 +226,7 @@ def iCanHazTicket():
         global subtitle 
         global description
         global download_base_url
+        global folder
         
         guid = ticket['Fahrplan.GUID']
         slug = ticket['Fahrplan.Slug'] if 'Fahrplan.Slug' in ticket else str(ticket['Fahrplan.ID'])
@@ -240,6 +242,8 @@ def iCanHazTicket():
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
         title = ticket['Fahrplan.Title']
+        folder = ticket['EncodingProfile.MirrorFolder']
+        
         if 'Fahrplan.Subtitle' in ticket:
                 subtitle = ticket['Fahrplan.Subtitle']
         if 'Fahrplan.Abstract' in ticket:
@@ -278,7 +282,7 @@ def mediaFromTracker():
     
     #publish the media file on media
     mime_type = get_mime_type_from_slug();
-    folder = get_folder_from_slug()    
+    #folder = get_folder_from_slug()    
     try:
         publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)
     except RuntimeError as err:
