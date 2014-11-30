@@ -45,11 +45,15 @@ def publish_youtube(ticket, clientId, clientSecret):
     return videoUrl
 
 def uploadVideo(ticket, accessToken, channelId):
+    description = strip_tags(ticket.get('Fahrplan.Description', ''))
+    abstract_or_description = strip_tags(ticket.get('Fahrplan.Abstract', description))
+    person_list = ticket.get('Fahrplan.Person_list', '')
+
     metadata = {
         'snippet':
         {
             'title': str(ticket['Fahrplan.Title']),
-            'description': "%s\n\n%s" % (strip_tags(ticket.get('Fahrplan.Abstract', ticket.get('Fahrplan.Description', ''))), ticket.get('Fahrplan.Person_list', '')),
+            'description': "%s\n\n%s" % (abstract_or_description, person_list),
             'channelId': channelId,
             'tags': []
         },
@@ -68,14 +72,14 @@ def uploadVideo(ticket, accessToken, channelId):
 
     # if persons-list is set
     if 'Fahrplan.Person_list' in ticket:
-        persons = ticket['Fahrplan.Person_list'].split(',')
+        persons = person_list.split(',')
 
         # append person-names to tags
         metadata['snippet']['tags'].extend(persons)
 
         # prepend usernames if only 1 or 2 speaker
         if len(persons) < 3:
-            metadata['snippet']['title'] = ', '.join(persons)+': '+str(ticket['Fahrplan.Title'])
+            metadata['snippet']['title'] = person_list+': '+str(ticket['Fahrplan.Title'])
 
     # recure limit title length to 100 (youtube api conformity)
     metadata['snippet']['title'] = metadata['snippet']['title'].replace('<', '(').replace('>', ')')
