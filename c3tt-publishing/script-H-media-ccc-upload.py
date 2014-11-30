@@ -135,6 +135,7 @@ codecs = {
 }
 
 #internal vars
+ticket = None
 filesize = 0
 length = 0
 sftp = None
@@ -209,6 +210,7 @@ def iCanHazTicket():
         logging.info("Ticket ID:" + str(ticket_id))
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
         logging.debug("Ticket:" + str(ticket))
+        global ticket
         global acronym
         global local_filename
         global local_filename_base
@@ -293,7 +295,7 @@ def auphonicFromTracker():
 
 def youtubeFromTracker():
     try:
-        youtubeUrl = publish_youtube(ticket, config['youtube']['secret'])
+        youtubeUrl = publish_youtube(ticket, config['youtube']['client_id'], config['youtube']['secret'])
         setTicketProperties(ticket_id, {'YouTube.Url': youtubeUrl}, url, group, host, secret)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
