@@ -306,7 +306,6 @@ def addToPlaylists(ticket, videoId, accessToken, channelId):
 
     logger.debug('found existing playlists with matching names: %s' % (playlistIds,))
     for name in ticketPlaylists:
-        name = '%s – %s' % (ticket['Meta.Album'], name)
         if not name in playlistIds:
             logger.debug('creating playlist "%s"' % name)
             r = requests.post(
