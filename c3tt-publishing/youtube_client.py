@@ -85,11 +85,15 @@ def uploadVideo(ticket, accessToken, channelId):
     abstract_or_description = strip_tags(ticket.get('Fahrplan.Abstract', description))
     person_list = ticket.get('Fahrplan.Person_list', '')
 
+    description = '%s\n\n%s' % (abstract_or_description, person_list)
+    if 'Publishing.Media.Url' in ticket and 'Fahrplan.Slug' in ticket:
+        description = os.path.join(ticket['Publishing.Media.Url'], ticket['Fahrplan.Slug']+'.html') + '\n\n' + description
+
     metadata = {
         'snippet':
         {
             'title': str(ticket['Fahrplan.Title']),
-            'description': "%s\n\n%s" % (abstract_or_description, person_list),
+            'description': description,
             'channelId': channelId,
             'tags': []
         },
