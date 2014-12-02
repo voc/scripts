@@ -261,16 +261,26 @@ def addToPlaylists(ticket, videoId, accessToken, channelId):
 
     ticketPlaylists = [ticket['Meta.Album'],]
     if 'Fahrplan.Track' in ticket:
-        ticketPlaylists.append('%s — Track %s' % (ticket['Meta.Album'], ticket['Fahrplan.Track']))
+        ticketPlaylists.append('Track %s' % ticket['Fahrplan.Track'])
 
     if 'Fahrplan.Type' in ticket:
-        ticketPlaylists.append('%s — Type %s' % (ticket['Meta.Album'], ticket['Fahrplan.Type']))
+        ticketPlaylists.append('Type %s' % ticket['Fahrplan.Type'])
 
     if 'Fahrplan.Day' in ticket:
-        ticketPlaylists.append('%s — Day %s' % (ticket['Meta.Album'], ticket['Fahrplan.Day']))
+        ticketPlaylists.append('Day %s' % ticket['Fahrplan.Day'])
 
     if 'Fahrplan.Room' in ticket:
-        ticketPlaylists.append('%s — Room %s' % (ticket['Meta.Album'], ticket['Fahrplan.Room']))
+        ticketPlaylists.append('Room %s' % ticket['Fahrplan.Room'])
+
+    language = ticket.get('Record.Language')
+    if language == 'de':
+        ticketPlaylists.append('Deutsch')
+    elif language == 'en':
+        ticketPlaylists.append('English')
+    elif language == 'de-en':
+        ticketPlaylists.append('Deutsch (with english translation)')
+    elif language == 'en-de':
+        ticketPlaylists.append('English (mit deutscher Übersetzung)')
 
     logger.debug('adding video to the following playlists: %s', ticketPlaylists)
     logger.debug('fetching list of playlists')
@@ -296,6 +306,7 @@ def addToPlaylists(ticket, videoId, accessToken, channelId):
 
     logger.debug('found existing playlists with matching names: %s' % (playlistIds,))
     for name in ticketPlaylists:
+        name = '%s – %s' % (ticket['Meta.Album'], name)
         if not name in playlistIds:
             logger.debug('creating playlist "%s"' % name)
             r = requests.post(
