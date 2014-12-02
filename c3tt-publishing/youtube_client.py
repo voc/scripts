@@ -281,10 +281,18 @@ def addToPlaylists(ticket, videoId, accessToken, channelId):
         ticketPlaylists.append('Deutsch')
     elif language == 'en':
         ticketPlaylists.append('English')
+
     elif language == 'de-en':
-        ticketPlaylists.append('Deutsch (with english translation)')
+        if 'Publishing.InfileIsTranslated' in ticket:
+            ticketPlaylists.append('Deutsch (english translation)')
+        else:
+            ticketPlaylists.append('Deutsch')
+
     elif language == 'en-de':
-        ticketPlaylists.append('English (mit deutscher Übersetzung)')
+        if 'Publishing.InfileIsTranslated' in ticket:
+            ticketPlaylists.append('English (deutsche Übersetzung)')
+        else:
+            ticketPlaylists.append('English')
 
     logger.debug('adding video to the following playlists: %s', ticketPlaylists)
     logger.debug('fetching list of playlists')
