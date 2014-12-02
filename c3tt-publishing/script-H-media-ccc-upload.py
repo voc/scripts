@@ -209,9 +209,9 @@ def iCanHazTicket():
     if ticket_id != False:
         #copy ticket details to local variables
         logging.info("Ticket ID:" + str(ticket_id))
+        global ticket
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
         logging.debug("Ticket:" + str(ticket))
-        global ticket
         global acronym
         global local_filename
         global local_filename_base
