@@ -25,7 +25,7 @@
 #         sys.exit(-1)
 
 from html.parser import HTMLParser
-import subprocess, logging, requests, json, mimetypes, os
+import subprocess, logging, requests, json, mimetypes, os, re
 logger = logging.getLogger()
 
 # publish a file on youtube
@@ -41,7 +41,8 @@ def publish_youtube(ticket, clientId, clientSecret):
     infile = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
 
     # if a second language is configured, remux the video to only have the one audio track and upload it twice
-    if ticket['Record.Language'] == 'de-en' or ticket['Record.Language'] == 'en-de':
+    m = re.match('(..)-(..)', ticket['Record.Language'])
+    if m:
         logger.debug('remuxing dual-language video into two parts')
 
         outfile1 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
@@ -59,7 +60,7 @@ def publish_youtube(ticket, clientId, clientSecret):
         youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
 
         logger.debug('remuxing with translated audio to '+outfile2)
-        ticket['Publishing.InfileIsTranslated'] = True
+        ticket['Publishing.InfileIsTranslated'] = m.group(2)
         if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', infile, '-map', '0:0', '-map', '0:2', '-c', 'copy', outfile2]) != 0:
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
@@ -116,8 +117,12 @@ def uploadVideo(ticket, accessToken, channelId):
         if len(persons) < 3:
             metadata['snippet']['title'] = ticket['Fahrplan.Person_list']+': '+str(ticket['Fahrplan.Title'])
 
-    if 'Publishing.InfileIsTranslated' in ticket:
-        metadata['snippet']['title'] += ' (Translated)'
+    translation = ticket.get('Publishing.InfileIsTranslated')
+    if translation == 'de':
+        metadata['snippet']['title'] += ' (deutsche Übersetzung)'
+
+    elif translation == 'en':
+        metadata['snippet']['title'] += ' (english translation)'
 
     # recure limit title length to 100 (youtube api conformity)
     metadata['snippet']['title'] = metadata['snippet']['title'].replace('<', '(').replace('>', ')')
