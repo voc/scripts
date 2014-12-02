@@ -25,7 +25,7 @@
 #         sys.exit(-1)
 
 from html.parser import HTMLParser
-import logging, requests, json, mimetypes, os
+import subprocess, logging, requests, json, mimetypes, os
 logger = logging.getLogger()
 
 # publish a file on youtube
@@ -37,12 +37,47 @@ def publish_youtube(ticket, clientId, clientSecret):
 
     accessToken = getFreshToken(ticket['Publishing.YouTube.Token'], clientId, clientSecret)
     channelId = getChannelId(accessToken)
-    videoId = uploadVideo(ticket, accessToken, channelId)
-    addToPlaylists(ticket, videoId, accessToken, channelId)
 
-    videoUrl = 'https://www.youtube.com/watch?v='+videoId
-    logger.info("successfully published Ticket to %s" % videoUrl)
-    return videoUrl
+    infile = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
+
+    # if a second language is configured, remux the video to only have the one audio track and upload it twice
+    if ticket['Record.Language'] == 'de-en' or ticket['Record.Language'] == 'en-de':
+        logger.debug('remuxing dual-language video into two parts')
+
+        outfile1 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
+        outfile2 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio2." + ticket['EncodingProfile.Extension']
+        youtubeUrls = []
+
+        logger.debug('remuxing with original audio to '+outfile1)
+        ticket['Publishing.Infile'] = outfile1
+
+        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', infile, '-map', '0:0', '-map', '0:1', '-c', 'copy', outfile1]) != 0:
+            raise RuntimeError('error remuxing '+infile+' to '+outfile1)
+
+        videoId = uploadVideo(ticket, accessToken, channelId)
+        addToPlaylists(ticket, videoId, accessToken, channelId)
+        youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
+
+        logger.debug('remuxing with translated audio to '+outfile2)
+        ticket['Publishing.InfileIsTranslated'] = True
+        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', infile, '-map', '0:0', '-map', '0:2', '-c', 'copy', outfile2]) != 0:
+            raise RuntimeError('error remuxing '+infile+' to '+outfile2)
+
+        videoId = uploadVideo(ticket, accessToken, channelId)
+        addToPlaylists(ticket, videoId, accessToken, channelId)
+        youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
+
+        return youtubeUrls
+
+    else:
+        ticket['Publishing.Infile'] = infile
+        videoId = uploadVideo(ticket, accessToken, channelId)
+        addToPlaylists(ticket, videoId, accessToken, channelId)
+
+        videoUrl = 'https://www.youtube.com/watch?v='+videoId
+        logger.info("successfully published Ticket to %s" % videoUrl)
+        return [videoUrl,]
+
 
 def uploadVideo(ticket, accessToken, channelId):
     description = strip_tags(ticket.get('Fahrplan.Description', ''))
@@ -72,14 +107,17 @@ def uploadVideo(ticket, accessToken, channelId):
 
     # if persons-list is set
     if 'Fahrplan.Person_list' in ticket:
-        persons = person_list.split(',')
+        persons = ticket['Fahrplan.Person_list'].split(',')
 
         # append person-names to tags
         metadata['snippet']['tags'].extend(persons)
 
         # prepend usernames if only 1 or 2 speaker
         if len(persons) < 3:
-            metadata['snippet']['title'] = person_list+': '+str(ticket['Fahrplan.Title'])
+            metadata['snippet']['title'] = ticket['Fahrplan.Person_list']+': '+str(ticket['Fahrplan.Title'])
+
+    if 'Publishing.InfileIsTranslated' in ticket:
+        metadata['snippet']['title'] += ' (Translated)'
 
     # recure limit title length to 100 (youtube api conformity)
     metadata['snippet']['title'] = metadata['snippet']['title'].replace('<', '(').replace('>', ')')
@@ -121,11 +159,10 @@ def uploadVideo(ticket, accessToken, channelId):
     if 'Publishing.YouTube.Category' in ticket:
         metadata['snippet']['categoryId'] = int(ticket['Publishing.YouTube.Category'])
 
-    localfile = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
-    (mimetype, encoding) = mimetypes.guess_type(localfile)
-    size = os.stat(localfile).st_size
+    (mimetype, encoding) = mimetypes.guess_type(ticket['Publishing.Infile'])
+    size = os.stat(ticket['Publishing.Infile']).st_size
 
-    logger.debug('guessed mimetype for file %s as %s and its size as %u bytes' % (localfile, mimetype, size))
+    logger.debug('guessed mimetype for file %s as %s and its size as %u bytes' % (ticket['Publishing.Infile'], mimetype, size))
 
     r = requests.post(
         'https://www.googleapis.com/upload/youtube/v3/videos',
@@ -150,7 +187,7 @@ def uploadVideo(ticket, accessToken, channelId):
 
     logger.info('successfully created video and received upload-url from %s' % (r.headers['server'] if 'server' in r.headers else '-'))
     logger.debug('uploading video-data to %s' % r.headers['location'])
-    with open(localfile, 'rb') as fp:
+    with open(ticket['Publishing.Infile'], 'rb') as fp:
         r = requests.put(
             r.headers['location'],
             headers={

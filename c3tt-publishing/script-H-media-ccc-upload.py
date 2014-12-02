@@ -299,8 +299,9 @@ def auphonicFromTracker():
 
 def youtubeFromTracker():
     try:
-        youtubeUrl = publish_youtube(ticket, config['youtube']['client_id'], config['youtube']['secret'])
-        setTicketProperties(ticket_id, {'YouTube.Url': youtubeUrl}, url, group, host, secret)
+        youtubeUrls = publish_youtube(ticket, config['youtube']['client_id'], config['youtube']['secret'])
+        for i, youtubeUrl in enumerate(youtubeUrls):
+            setTicketProperties(ticket_id, {'YouTube.Url'+str(i): youtubeUrl}, url, group, host, secret)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
