@@ -40,7 +40,7 @@ download_base_url = <base_url>
 
 [youtube]
 secret = <youtube-api-secret>
-client_id <youtube-client-id>
+client_id = <youtube-client-id>
 
 [conference]
 rec_path = <path>
