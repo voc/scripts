@@ -60,6 +60,7 @@ def publish_youtube(ticket, clientId, clientSecret):
         youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
 
         logger.debug('remuxing with translated audio to '+outfile2)
+        ticket['Publishing.Infile'] = outfile2
         ticket['Publishing.InfileIsTranslated'] = m.group(2)
         if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', infile, '-map', '0:0', '-map', '0:2', '-c', 'copy', outfile2]) != 0:
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
