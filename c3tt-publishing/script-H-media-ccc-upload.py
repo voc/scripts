@@ -300,8 +300,11 @@ def auphonicFromTracker():
 def youtubeFromTracker():
     try:
         youtubeUrls = publish_youtube(ticket, config['youtube']['client_id'], config['youtube']['secret'])
+        props = {}
         for i, youtubeUrl in enumerate(youtubeUrls):
-            setTicketProperties(ticket_id, {'YouTube.Url'+str(i): youtubeUrl}, url, group, host, secret)
+            props['YouTube.Url'+str(i)] = youtubeUrl
+
+        setTicketProperties(ticket_id, props, url, group, host, secret)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
