@@ -17,8 +17,9 @@
 
 # Call like this:
 #     try:
-#         youtubeUrl = publish_youtube(ticket, config['youtube']['secret'])
-#         setTicketProperties(ticket_id, {'YouTube.Url': youtubeUrl}, url, group, host, secret)
+#         youtubeUrls = publish_youtube(ticket, config['youtube']['secret'])
+#         for i, youtubeUrl in enumerate(youtubeUrls):
+#             setTicketProperties(ticket_id, {'YouTube.Url'+str(i): youtubeUrl}, url, group, host, secret)
 #     except RuntimeError as err:
 #         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
 #         logging.error("Publishing failed: \n" + str(err))
