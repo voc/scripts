@@ -70,6 +70,10 @@ def publish_youtube(ticket, clientId, clientSecret):
         addToPlaylists(ticket, videoId, accessToken, channelId)
         youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
 
+        logger.info("deleting remuxed versions: %s and %s" % (outfile1, outfile2))
+        os.remove(outfile1)
+        os.remove(outfile2)
+
         return youtubeUrls
 
     else:
