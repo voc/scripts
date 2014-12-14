@@ -54,7 +54,7 @@ def C3TClient(url, method, group, host, secret, args):
                 kvs = []
                 for k, v in args[i].items():
                     kvs.append(urllib.parse.quote('['+k+']', '~')+'='+urllib.parse.quote(v, '~'))
-                arg = urllib.parse.quote('&').join(kvs)
+                arg = '&'.join(kvs)
             else:
                 arg = urllib.parse.quote(str(arg), '~')
 
