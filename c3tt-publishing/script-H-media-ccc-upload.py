@@ -34,6 +34,7 @@ from c3t_rpc_client import *
 from media_ccc_de_api_client import *
 from auphonic_client import *
 from youtube_client import *
+from twitter_client import *
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -79,6 +80,10 @@ if source == "c3tt":
     url = config['C3Tracker']['url']
     from_state = config['C3Tracker']['from_state']
     to_state = config['C3Tracker']['to_state']
+    token = config['twitter']['token'] 
+    token_secret = config['twitter']['token_secret']
+    consumer_key = config['twitter']['consumer_key']
+    consumer_secret = config['twitter']['consumer_secret']
 
 if True:
     ################### media.ccc.de #################
@@ -228,6 +233,7 @@ def iCanHazTicket():
         global download_base_url
         global folder
         
+        #TODO add here some try magic to catch missing properties
         guid = ticket['Fahrplan.GUID']
         slug = ticket['Fahrplan.Slug'] if 'Fahrplan.Slug' in ticket else str(ticket['Fahrplan.ID'])
         slug_c = slug.replace(":","_")    
@@ -251,19 +257,19 @@ def iCanHazTicket():
         #debug
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
         
-        if not os.path.isfile(video_base + local_filename):
-            logging.error("Source file does not exist (%s)" % (video_base + local_filename))
-            setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
-            sys.exit(-1)
-        if not os.path.exists(output):
-            logging.error("Output path does not exist (%s)" % (output))
-            setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
-            sys.exit(-1)
-        else: 
-            if not os.access(output, os.W_OK):
-                logging.error("Output path is not writable (%s)" % (output))
-                setTicketFailed(ticket_id, "Output path is not writable (%s)" % (output), url, group, host, secret)
-                sys.exit(-1)
+#         if not os.path.isfile(video_base + local_filename):
+#             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
+#             setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
+#             sys.exit(-1)
+#         if not os.path.exists(output):
+#             logging.error("Output path does not exist (%s)" % (output))
+#             setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
+#             sys.exit(-1)
+#         else: 
+#             if not os.access(output, os.W_OK):
+#                 logging.error("Output path is not writable (%s)" % (output))
+#                 setTicketFailed(ticket_id, "Output path is not writable (%s)" % (output), url, group, host, secret)
+#                 sys.exit(-1)
     else:
         logging.warn("No ticket for this task, exiting")
         sys.exit(0);
@@ -311,7 +317,8 @@ def youtubeFromTracker():
         sys.exit(-1)
 
 iCanHazTicket()
-choose_target_from_slug()    
+#choose_target_from_slug()
 #mediaFromTracker()
 #youtubeFromTracker()
+send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 

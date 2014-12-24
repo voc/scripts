@@ -42,6 +42,12 @@ download_base_url = <base_url>
 secret = <youtube-api-secret>
 client_id = <youtube-client-id>
 
+[twitter]
+token = <user token>
+token_secret = <user secret>
+consumer_key = <consumer key>
+consumer_secret = <consumer secret>
+
 [conference]
 rec_path = <path>
 image_path = <path>
