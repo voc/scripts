@@ -10,7 +10,13 @@ version_url = "http://events.ccc.de/congress/2014/Fahrplan/version"
 
 version = None
 while True:
-   res = urllib.request.urlopen(version_url)   
+   try:
+      res = urllib.request.urlopen(version_url,timeout=2)   
+   except urllib.error.URLError as err:
+      print("could not get Fahrplan from " + str(version_url))
+      print("reason " + str(err.reason))
+      time.sleep(interval)
+      continue
    text = res.read().decode('UTF-8')
    tmp = str(text).replace('\n',' ')
    inpos= tmp.rfind('URL: ')

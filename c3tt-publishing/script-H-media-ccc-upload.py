@@ -317,7 +317,7 @@ def youtubeFromTracker():
         sys.exit(-1)
 
 iCanHazTicket()
-#choose_target_from_slug()
+choose_target_from_slug()
 #mediaFromTracker()
 #youtubeFromTracker()
 send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
