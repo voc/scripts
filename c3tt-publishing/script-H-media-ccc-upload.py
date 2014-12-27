@@ -177,6 +177,9 @@ def get_mime_type_from_slug():
     return "audio/mpeg"
   if profile_slug == 'opus':
     return "audio/opus"
+#FIXME error handling!!!
+  logging.debug("cant find the mimetype")
+  exit(1)
 
 # def get_folder_from_slug():
 #   if profile_slug == "h264-iprod":
