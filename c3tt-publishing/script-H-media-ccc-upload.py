@@ -282,7 +282,7 @@ def mediaFromTracker():
     logging.info("=========================================")
 
     #create a event on media
-    if profileslug != "mp3" or profileslug != "opus":        
+    if profile_slug != "mp3" and profile_slug != "opus":        
         try:
             make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
         except RuntimeError as err:
