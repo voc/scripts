@@ -163,13 +163,13 @@ folder = None
 ################################## media.ccc.de related functions ##################################
 #TODO this only works with tracker and media, find a more generic way!!
 def get_mime_type_from_slug():
-  if profile_slug == "h264-iprod":
-    return 'vnd.voc/h264-lq'
-  if profile_slug == "h264-sd":
-    return 'vnd.voc/h264-hd'
+  if profile_slug == "sd":
+    return 'vnd.voc/h264-sd'
   if profile_slug == "hd":
     return 'video/mp4'
-  if profile_slug == 'webm':
+  if profile_slug == 'webm-sd':
+    return "vnd.voc/webm-sd"
+  if profile_slug == 'webm-hd':
     return "video/webm"
   if profile_slug == 'ogg':
     return "video/ogg"
