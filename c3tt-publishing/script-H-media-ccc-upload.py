@@ -282,12 +282,13 @@ def mediaFromTracker():
     logging.info("=========================================")
 
     #create a event on media
-    try:
-        make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
-    except RuntimeError as err:
-        logging.error("Creating event failed")
-        setTicketFailed(ticket_id, "Creating event failed: \n" + str(err), url, group, host, secret)
-        sys.exit(-1)
+    if profileslug != "mp3" or profileslug != "opus":        
+        try:
+            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
+        except RuntimeError as err:
+            logging.error("Creating event failed")
+            setTicketFailed(ticket_id, "Creating event failed: \n" + str(err), url, group, host, secret)
+            sys.exit(-1)
     
     #publish the media file on media
     mime_type = get_mime_type_from_slug();
