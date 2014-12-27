@@ -199,7 +199,7 @@ def get_mime_type_from_slug():
 
 def choose_target_from_slug():
     logging.debug("profile slug" + profile_slug)
-    if profile_slug == "h264-hd":
+    if profile_slug == "hd":
         logging.debug("publising on youtube")
         youtubeFromTracker()
 
