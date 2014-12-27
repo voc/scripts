@@ -25,11 +25,11 @@ def send_tweet(ticket, token, token_secret, consumer_key, consumer_secret):
     #FIXME we need a nicer solution for this but it is christmas
     
     if ticket['EncodingProfile.Slug'] == "h264-hd":
-        target = "youtube"
+        target = "media.ccc.de and youtube"
     else:
         target = "media.ccc.de"
         
-    msg = " has been released as " + str(ticket['EncodingProfile.Extension']) + " on " + target
+    msg = " has been released as " + str(ticket['EncodingProfile.Slug']) + " on " + target
     title = str(ticket['Fahrplan.Title'])
     if len(title) >= (160 - len(msg)):
         title = title[0:len(msg)]
