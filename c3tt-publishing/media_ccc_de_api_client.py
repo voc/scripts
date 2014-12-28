@@ -68,7 +68,7 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
 	       'subtitle' : subtitle,
 	       'description' : description
 	      }     
-    logger.debug(payload)
+    logger.debug("\n".join(payload))
 
     #call media api (and ignore SSL this should be fixed on media site)
     try:

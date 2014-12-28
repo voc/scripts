@@ -116,28 +116,28 @@ if source != 'c3tt':
 #this is also used as postfix for the publishing dir
 thumb_path = config['env']['thumb_path']
 
-#codec / container related paths
-#this paths should be the same on media and local !!
-#if you want to add new codecs make sure media.ccc.de knows the mimetype BEFORE you push something
-codecs = {
-"h264" : {"path" : "mp4/",
-          "ext" : ".mp4",
-          "mimetype" : "video/mp4"},
-"webm" : {"path" : "webm/",
-          "ext": ".webm",
-          "mimetype" : "video/webm"},
-"ogv" : {"path" : "ogv/",
-         "ext" : ".ogv",
-         "mimetype" : "video/ogg"},
-"mp3" : {"path" : "mp3/", 
-         "ext" : ".mp3",
-         "mimetype" : "audio/mpeg"},
-"opus" : {"path" : "opus/",
-          "ext" : ".opus", 
-          "mimetype" : "audio/opus"},
-"ogg"  : {"path" : "ogg/",
-          "ext"  :  ".ogg"}
-}
+# #codec / container related paths
+# #this paths should be the same on media and local !!
+# #if you want to add new codecs make sure media.ccc.de knows the mimetype BEFORE you push something
+# codecs = {
+# "h264" : {"path" : "mp4/",
+#           "ext" : ".mp4",
+#           "mimetype" : "video/mp4"},
+# "webm" : {"path" : "webm/",
+#           "ext": ".webm",
+#           "mimetype" : "video/webm"},
+# "ogv" : {"path" : "ogv/",
+#          "ext" : ".ogv",
+#          "mimetype" : "video/ogg"},
+# "mp3" : {"path" : "mp3/", 
+#          "ext" : ".mp3",
+#          "mimetype" : "audio/mpeg"},
+# "opus" : {"path" : "opus/",
+#           "ext" : ".opus", 
+#           "mimetype" : "audio/opus"},
+# "ogg"  : {"path" : "ogg/",
+#           "ext"  :  ".ogg"}
+# }
 
 #internal vars
 ticket = None
@@ -159,43 +159,35 @@ subtitle = None
 description = None
 profileslug = None
 folder = None
+mime_type = None
 
 ################################## media.ccc.de related functions ##################################
 #TODO this only works with tracker and media, find a more generic way!!
 def get_mime_type_from_slug():
+  global mime_type
   if profile_slug == "sd":
-    return 'vnd.voc/h264-sd'
+    mime_type = 'video/mp4'
+    return True
   if profile_slug == "hd":
-    return 'video/mp4'
+    mime_type = 'vnd.voc/h264-sd'
+    return True
   if profile_slug == 'webm-sd':
-    return "vnd.voc/webm-sd"
+    mime_type = 'video/webm'
+    return True
   if profile_slug == 'webm-hd':
-    return "video/webm"
+    mime_type = 'video/webm-hd'
+    return True
   if profile_slug == 'ogg':
-    return "video/ogg"
+    mime_type = 'video/ogg'
+    return True
   if profile_slug == 'mp3':
-    return "audio/mpeg"
+    mime_type = 'audio/mpeg'
+    return True
   if profile_slug == 'opus':
-    return "audio/opus"
-#FIXME error handling!!!
+    mime_type = "audio/opus"
+    return True
   logging.debug("cant find the mimetype")
-  exit(1)
-
-# def get_folder_from_slug():
-#   if profile_slug == "h264-iprod":
-#     return 'mp4-lq'
-#   if profile_slug == "h264-sd":
-#     return 'mp4-sd'
-#   if profile_slug == "h264-hd":
-#     return 'mp4-hd'
-#   if profile_slug == 'webm':
-#     return "webm"
-#   if profile_slug == 'ogg':
-#     return "ogg"
-#   if profile_slug == 'mp3':
-#     return "mp3"
-#   if profile_slug == 'opus':
-#     return "opus"    
+  return False
 
 def choose_target_from_slug():
     logging.debug("profile slug" + profile_slug)
@@ -219,7 +211,7 @@ def iCanHazTicket():
         logging.info("Ticket ID:" + str(ticket_id))
         global ticket
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
-        logging.debug("Ticket:" + str(ticket))
+        logging.debug("Ticket:" + str("\n".join(ticket)))
         global acronym
         global local_filename
         global local_filename_base
@@ -260,19 +252,19 @@ def iCanHazTicket():
         #debug
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
         
-#         if not os.path.isfile(video_base + local_filename):
-#             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
-#             setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
-#             sys.exit(-1)
-#         if not os.path.exists(output):
-#             logging.error("Output path does not exist (%s)" % (output))
-#             setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
-#             sys.exit(-1)
-#         else: 
-#             if not os.access(output, os.W_OK):
-#                 logging.error("Output path is not writable (%s)" % (output))
-#                 setTicketFailed(ticket_id, "Output path is not writable (%s)" % (output), url, group, host, secret)
-#                 sys.exit(-1)
+        if not os.path.isfile(video_base + local_filename):
+            logging.error("Source file does not exist (%s)" % (video_base + local_filename))
+            setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
+            sys.exit(-1)
+        if not os.path.exists(output):
+            logging.error("Output path does not exist (%s)" % (output))
+            setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
+            sys.exit(-1)
+        else: 
+            if not os.access(output, os.W_OK):
+                logging.error("Output path is not writable (%s)" % (output))
+                setTicketFailed(ticket_id, "Output path is not writable (%s)" % (output), url, group, host, secret)
+                sys.exit(-1)
     else:
         logging.warn("No ticket for this task, exiting")
         sys.exit(0);
@@ -287,12 +279,13 @@ def mediaFromTracker():
             make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
         except RuntimeError as err:
             logging.error("Creating event failed")
-            setTicketFailed(ticket_id, "Creating event failed: \n" + str(err), url, group, host, secret)
+            setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
     
     #publish the media file on media
-    mime_type = get_mime_type_from_slug();
-    #folder = get_folder_from_slug()    
+    if not get_mime_type_from_slug():
+        setTicketFailed(ticket_id, "Publishing failed: Invalid or no mime type \n" + str(err), url, group, host, secret)
+
     try:
         publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)
     except RuntimeError as err:
@@ -322,7 +315,5 @@ def youtubeFromTracker():
 
 iCanHazTicket()
 choose_target_from_slug()
-#mediaFromTracker()
-#youtubeFromTracker()
 send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 
