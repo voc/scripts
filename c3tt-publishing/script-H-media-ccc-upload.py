@@ -169,7 +169,7 @@ def get_mime_type_from_slug():
     mime_type = 'video/mp4'
     return True
   if profile_slug == "hd":
-    mime_type = 'vnd.voc/h264-sd'
+    mime_type = 'vnd.voc/h264-hd'
     return True
   if profile_slug == 'webm-sd':
     mime_type = 'video/webm'
