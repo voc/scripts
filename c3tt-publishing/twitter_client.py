@@ -24,7 +24,7 @@ def send_tweet(ticket, token, token_secret, consumer_key, consumer_secret):
     logger.info("tweeting the release")
     #FIXME we need a nicer solution for this but it is christmas
     
-    if ticket['EncodingProfile.Slug'] == "h264-hd":
+    if ticket['EncodingProfile.Slug'] == "hd":
         target = "media.ccc.de and youtube"
     else:
         target = "media.ccc.de"
