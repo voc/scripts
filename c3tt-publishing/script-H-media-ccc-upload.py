@@ -191,11 +191,11 @@ def get_mime_type_from_slug():
 
 def choose_target_from_slug():
     logging.debug("profile slug" + profile_slug)
-    if profile_slug == "hd":
-        logging.debug("publising on youtube")
+    if profile_slug == "hd" and not has_youtube_url:
+        logging.debug("publishing on youtube")
         youtubeFromTracker()
 
-    logging.debug("publising on media")
+    logging.debug("publishing on media")
     mediaFromTracker()
 
 ################################# Here be dragons #################################
@@ -227,6 +227,7 @@ def iCanHazTicket():
         global description
         global download_base_url
         global folder
+        global has_youtube_url
         
         #TODO add here some try magic to catch missing properties
         guid = ticket['Fahrplan.GUID']
@@ -242,6 +243,10 @@ def iCanHazTicket():
         download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
+        if 'YouTube.Url0' in ticket and ticket['YouTube.Url0'] != "":
+                has_youtube_url = True
+        else:
+                has_youtube_url = False
         title = ticket['Fahrplan.Title']
         folder = ticket['EncodingProfile.MirrorFolder']
         
