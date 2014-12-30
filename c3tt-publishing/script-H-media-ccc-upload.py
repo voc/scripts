@@ -175,7 +175,7 @@ def get_mime_type_from_slug():
     mime_type = 'video/webm'
     return True
   if profile_slug == 'webm-hd':
-    mime_type = 'video/webm-hd'
+    mime_type = 'vnd.voc/webm-hd'
     return True
   if profile_slug == 'ogg':
     mime_type = 'video/ogg'
