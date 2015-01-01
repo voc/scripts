@@ -211,7 +211,7 @@ def iCanHazTicket():
         logging.info("Ticket ID:" + str(ticket_id))
         global ticket
         ticket = getTicketProperties(str(ticket_id), url, group, host, secret)
-        logging.debug("Ticket:" + str("\n".join(ticket)))
+        logging.debug("Ticket: " + str(ticket))
         global acronym
         global local_filename
         global local_filename_base
