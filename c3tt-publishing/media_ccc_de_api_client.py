@@ -55,7 +55,7 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
     if description == None:
         description = ''
     if subtitle == None:
-        subtitle == ''
+        subtitle = ''
     title = title.replace('"','')
     # prepare variables for api call
     thumb_url = download_base_url + "thumbs/" + str(local_filename_base) + ".jpg"
