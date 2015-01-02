@@ -52,7 +52,11 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
             return False
     else:
         logger.info("thumb exists skipping")
-            
+    if description == None:
+        description = ''
+    if subtitle == None:
+        subtitle == ''
+    title = title.replace('"','')
     # prepare variables for api call
     thumb_url = download_base_url + "thumbs/" + str(local_filename_base) + ".jpg"
     poster_url = download_base_url + "thumbs/" + str(local_filename_base) + "_preview.jpg"
