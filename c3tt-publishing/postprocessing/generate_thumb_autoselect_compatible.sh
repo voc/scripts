@@ -33,5 +33,5 @@ do
 done
 
 WINNER=$(python2 $BASEDIR/select.py $TMPDIR/*.jpg)
-ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -s 192x144 $outjpg
-ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -s 640x360 $outjpg_preview
+ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=192:-1' $outjpg
+ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=640:-1' $outjpg_preview
