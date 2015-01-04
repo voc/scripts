@@ -29,9 +29,9 @@ fi
 
 for POS in 20 30 40 $(seq 15 $INTERVAL $[ $LENGTH - 60 ])
 do
-	ffmpeg -loglevel error -ss $POS -i "$file"  -an -r 1 -filter:v 'scale=sar*iw:ih' -vframes 1 -f image2 -vcodec mjpeg -q:v 0 -y "$TMPDIR/$POS.jpg"
+	ffmpeg -loglevel error -ss $POS -i "$file"  -an -r 1 -filter:v 'scale=sar*iw:ih' -vframes 1 -f image2 -vcodec png -y "$TMPDIR/$POS.png"
 done
 
-WINNER=$(python2 $BASEDIR/select.py $TMPDIR/*.jpg)
-ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=192:-1' $outjpg
-ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=640:-1' $outjpg_preview
+WINNER=$(python2 $BASEDIR/select.py $TMPDIR/*.png)
+ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=192:-1' -f image2 -vcodec mjpeg -q:v 0 $outjpg
+ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=640:-1' -f image2 -vcodec mjpeg -q:v 0 $outjpg_preview
