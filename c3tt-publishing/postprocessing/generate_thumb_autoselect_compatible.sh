@@ -35,3 +35,5 @@ done
 WINNER=$(python2 $BASEDIR/select.py $TMPDIR/*.png)
 ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=192:-1' -f image2 -vcodec mjpeg -q:v 0 $outjpg
 ffmpeg -loglevel error -i $WINNER -filter:v 'crop=ih*4/3:ih' -filter:v 'scale=640:-1' -f image2 -vcodec mjpeg -q:v 0 $outjpg_preview
+
+rm -rf $TMPDIR
