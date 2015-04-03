@@ -57,7 +57,6 @@ def publish_youtube(ticket, clientId, clientSecret):
             raise RuntimeError('error remuxing '+infile+' to '+outfile1)
 
         videoId = uploadVideo(ticket, accessToken, channelId)
-        addToPlaylists(ticket, videoId, accessToken, channelId)
         youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
 
         logger.debug('remuxing with translated audio to '+outfile2)
@@ -67,7 +66,6 @@ def publish_youtube(ticket, clientId, clientSecret):
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         videoId = uploadVideo(ticket, accessToken, channelId)
-        addToPlaylists(ticket, videoId, accessToken, channelId)
         youtubeUrls.append('https://www.youtube.com/watch?v='+videoId)
 
         logger.info("deleting remuxed versions: %s and %s" % (outfile1, outfile2))
@@ -265,122 +263,6 @@ def getChannelId(accessToken):
 
     logger.info("successfully fetched Chanel-ID %s with name %s" % (channel['id'], channel['brandingSettings']['channel']['title']))
     return channel['id']
-
-def addToPlaylists(ticket, videoId, accessToken, channelId):
-    # TODO playlist by Album+Track, Album+Type, Album+Room, Album+Day
-
-    ticketPlaylists = [ticket['Meta.Album'],]
-    if 'Fahrplan.Track' in ticket:
-        ticketPlaylists.append('Track %s' % ticket['Fahrplan.Track'])
-
-    if 'Fahrplan.Type' in ticket:
-        ticketPlaylists.append('Type %s' % ticket['Fahrplan.Type'])
-
-    if 'Fahrplan.Day' in ticket:
-        ticketPlaylists.append('Day %s' % ticket['Fahrplan.Day'])
-
-    if 'Fahrplan.Room' in ticket:
-        ticketPlaylists.append('Room %s' % ticket['Fahrplan.Room'])
-
-    language = ticket.get('Record.Language')
-    if language == 'de':
-        ticketPlaylists.append('Deutsch')
-    elif language == 'en':
-        ticketPlaylists.append('English')
-
-    elif language == 'de-en':
-        if 'Publishing.InfileIsTranslated' in ticket:
-            ticketPlaylists.append('Deutsch (english translation)')
-        else:
-            ticketPlaylists.append('Deutsch')
-
-    elif language == 'en-de':
-        if 'Publishing.InfileIsTranslated' in ticket:
-            ticketPlaylists.append('English (deutsche Übersetzung)')
-        else:
-            ticketPlaylists.append('English')
-
-    logger.debug('adding video to the following playlists: %s', ticketPlaylists)
-    logger.debug('fetching list of playlists')
-    r = requests.get(
-        'https://www.googleapis.com/youtube/v3/playlists',
-        params={
-            'part': 'id,snippet',
-            'channelId': channelId,
-        },
-        headers={
-            'Authorization': 'Bearer '+accessToken,
-        }
-    )
-
-    if 200 != r.status_code:
-        raise RuntimeError('fetching list of playlists failed with error-code %u: %s' % (r.status_code, r.text))
-
-    playlists = r.json()
-    playlistIds = {}
-    for item in playlists['items']:
-        if item['snippet']['title'] in ticketPlaylists:
-            playlistIds[ item['snippet']['title'] ] = item['id']
-
-    logger.debug('found existing playlists with matching names: %s' % (playlistIds,))
-    for name in ticketPlaylists:
-        if not name in playlistIds:
-            logger.debug('creating playlist "%s"' % name)
-            r = requests.post(
-                'https://www.googleapis.com/youtube/v3/playlists',
-                params={
-                    'part': 'snippet,status',
-                },
-                headers={
-                    'Authorization': 'Bearer '+accessToken,
-                    'Content-Type': 'application/json; charset=UTF-8',
-                },
-                data=json.dumps({
-                    "status": {
-                        "privacyStatus": "private"
-                    },
-                    "snippet": {
-                        "title": name
-                    }
-                })
-            )
-
-            if 200 != r.status_code:
-                raise RuntimeError('creating playlist failed with error-code %u: %s' % (r.status_code, r.text))
-
-            playlist = r.json()
-            playlistIds[name] = playlist['id']
-            logger.info('created playlist "%s" as %s' % (name, playlist['id']))
-
-    logger.debug('final list of playlists add the videos to is: %s' % (playlistIds,))
-    for name in playlistIds:
-        logger.debug('adding video to playlist "%s" (%s)' % (name, playlistIds[name]))
-        s = json.dumps({
-            "snippet": {
-                "playlistId": playlistIds[name],
-                "resourceId": {
-                  "kind": 'youtube#video',
-                  "videoId": videoId,
-                }
-            }
-        })
-
-        r = requests.post(
-            'https://www.googleapis.com/youtube/v3/playlistItems',
-            params={
-                'part': 'snippet',
-            },
-            headers={
-                'Authorization': 'Bearer '+accessToken,
-                'Content-Type': 'application/json; charset=UTF-8',
-            },
-            data=s
-        )
-
-        if 200 != r.status_code:
-            raise RuntimeError('adding video to playlist failed with error-code %u: %s' % (r.status_code, r.text))
-
-        logger.info('successfully added video to playlist "%s" (%s)' % (name, playlistIds[name]))
 
 
 class MLStripper(HTMLParser):
