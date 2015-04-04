@@ -77,7 +77,7 @@ def publish_youtube(ticket, clientId, clientSecret):
     else:
         ticket['Publishing.Infile'] = infile
         videoId = uploadVideo(ticket, accessToken, channelId)
-        addToPlaylists(ticket, videoId, accessToken, channelId)
+        #addToPlaylists(ticket, videoId, accessToken, channelId)
 
         videoUrl = 'https://www.youtube.com/watch?v='+videoId
         logger.info("successfully published Ticket to %s" % videoUrl)
