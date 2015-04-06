@@ -98,7 +98,7 @@ def uploadVideo(ticket, accessToken, channelId):
             'title': str(ticket['Fahrplan.Title']),
             'description': description,
             'channelId': channelId,
-            'tags': []
+            'tags': selectTags(ticket)
         },
         'status':
         {
@@ -116,9 +116,6 @@ def uploadVideo(ticket, accessToken, channelId):
     # if persons-list is set
     if 'Fahrplan.Person_list' in ticket:
         persons = ticket['Fahrplan.Person_list'].split(',')
-
-        # append person-names to tags
-        metadata['snippet']['tags'].extend(persons)
 
         # prepend usernames if only 1 or 2 speaker
         if len(persons) < 3:
@@ -262,6 +259,48 @@ def getChannelId(accessToken):
 
     logger.info("successfully fetched Chanel-ID %s with name %s" % (channel['id'], channel['brandingSettings']['channel']['title']))
     return channel['id']
+
+
+def selectTags(ticket):
+    tags = []
+
+    if 'Fahrplan.Track' in ticket:
+        tags.append(ticket['Fahrplan.Track'])
+
+    if 'Fahrplan.Day' in ticket:
+        tags.append('Day %s' % ticket['Fahrplan.Day'])
+
+    if 'Fahrplan.Room' in ticket:
+        tags.append(ticket['Fahrplan.Room'])
+
+    # append language-specific tag
+    language = ticket.get('Record.Language')
+    if language == 'de':
+        tags.append('German')
+    elif language == 'en':
+        tags.append('English')
+
+    elif language == 'de-en':
+        if 'Publishing.InfileIsTranslated' in ticket:
+            tags.append('German (english translation)')
+        else:
+            tags.append('German')
+
+    elif language == 'en-de':
+        if 'Publishing.InfileIsTranslated' in ticket:
+            tags.append('English (german Übersetzung)')
+        else:
+            tags.append('English')
+
+    # if persons-list is set
+    if 'Fahrplan.Person_list' in ticket:
+        persons = ticket['Fahrplan.Person_list'].split(',')
+
+        # append person-names to tags
+        tags.extend(persons)
+
+    return tags
+
 
 
 class MLStripper(HTMLParser):
