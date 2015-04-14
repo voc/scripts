@@ -157,46 +157,27 @@ rpc_client = None
 title = None
 subtitle = None 
 description = None
-profileslug = None
+profile_slug = None
 folder = None
 mime_type = None
+target_youtube = None
+target_media = None
 
-################################## media.ccc.de related functions ##################################
-#TODO this only works with tracker and media, find a more generic way!!
-def get_mime_type_from_slug():
-  global mime_type
-  if profile_slug == "sd":
-    mime_type = 'video/mp4'
-    return True
-  if profile_slug == "hd":
-    mime_type = 'vnd.voc/h264-hd'
-    return True
-  if profile_slug == 'webm-sd':
-    mime_type = 'video/webm'
-    return True
-  if profile_slug == 'webm-hd':
-    mime_type = 'vnd.voc/webm-hd'
-    return True
-  if profile_slug == 'ogg':
-    mime_type = 'video/ogg'
-    return True
-  if profile_slug == 'mp3':
-    mime_type = 'audio/mpeg'
-    return True
-  if profile_slug == 'opus':
-    mime_type = "audio/opus"
-    return True
-  logging.debug("cant find the mimetype")
-  return False
+def choose_target_from_properties():
+    global target_youtube
+    global target_media
 
-def choose_target_from_slug():
-    logging.debug("profile slug" + profile_slug)
-    if profile_slug == "hd" and not has_youtube_url:
+    logging.debug("encoding profile youtube flag: " + ticket['Publishing.YouTube.EnableProfile'] + " project youtube flag: " + ticket['Publishing.YouTube.Enable'])
+    if ticket['Publishing.YouTube.EnableProfile'] == "yes" and ticket['Publishing.YouTube.Enable'] == "yes" and not has_youtube_url:
         logging.debug("publishing on youtube")
+        target_youtube = true
         youtubeFromTracker()
 
-    logging.debug("publishing on media")
-    mediaFromTracker()
+    logging.debug("encoding profile media flag: " + ticket['Publishing.Media.EnableProfile'] + " project media flag: " + ticket['Publishing.Media.Enable'])
+    if ticket['Publishing.Media.EnableProfile'] == "yes" and ticket['Publishing.Media.Enable'] == "yes":
+        logging.debug("publishing on media")
+        target_media = true
+        mediaFromTracker()
 
 ################################# Here be dragons #################################
 def iCanHazTicket():
@@ -288,8 +269,9 @@ def mediaFromTracker():
             sys.exit(-1)
     
     #publish the media file on media
-    if not get_mime_type_from_slug():
-        setTicketFailed(ticket_id, "Publishing failed: Invalid or no mime type \n" + str(err), url, group, host, secret)
+    if not 'Publishing.Media.MimeType' in ticket:
+        setTicketFailed(ticket_id, "Publishing failed: No mime type, please use property Publishing.Media.MimeType in encoding profile! \n" + str(err), url, group, host, secret)
+    mime_type = ticket['Publishing.Media.MimeType']
 
     try:
         publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)
@@ -319,6 +301,6 @@ def youtubeFromTracker():
         sys.exit(-1)
 
 iCanHazTicket()
-choose_target_from_slug()
+choose_target_from_properties()
 send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 
