@@ -21,16 +21,14 @@ logger = logging.getLogger()
 
 
 def send_tweet(ticket, token, token_secret, consumer_key, consumer_secret):
-    global target_youtube
-    global target_media
-
-    target = "media.ccc.de" if target_media == true
-    target = "YouTube"      if target_youtube == true
-    target = "media.ccc.de and youtube" if target_media == true and target_youtube == true
-
-    logger.info("tweeting the release (" + target + ")")
-
-    # TODO use nicer names for encoding profiles
+    logger.info("tweeting the release")
+    #FIXME we need a nicer solution for this but it is christmas
+    
+    if ticket['EncodingProfile.Slug'] == "hd":
+        target = "media.ccc.de and youtube"
+    else:
+        target = "media.ccc.de"
+        
     msg = " has been released as " + str(ticket['EncodingProfile.Slug']) + " on " + target
     title = str(ticket['Fahrplan.Title'])
     if len(title) >= (160 - len(msg)):

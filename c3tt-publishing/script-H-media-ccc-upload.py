@@ -170,13 +170,13 @@ def choose_target_from_properties():
     logging.debug("encoding profile youtube flag: " + ticket['Publishing.YouTube.EnableProfile'] + " project youtube flag: " + ticket['Publishing.YouTube.Enable'])
     if ticket['Publishing.YouTube.EnableProfile'] == "yes" and ticket['Publishing.YouTube.Enable'] == "yes" and not has_youtube_url:
         logging.debug("publishing on youtube")
-        target_youtube = true
+        target_youtube = True
         youtubeFromTracker()
 
     logging.debug("encoding profile media flag: " + ticket['Publishing.Media.EnableProfile'] + " project media flag: " + ticket['Publishing.Media.Enable'])
     if ticket['Publishing.Media.EnableProfile'] == "yes" and ticket['Publishing.Media.Enable'] == "yes":
         logging.debug("publishing on media")
-        target_media = true
+        target_media = True
         mediaFromTracker()
 
 ################################# Here be dragons #################################
