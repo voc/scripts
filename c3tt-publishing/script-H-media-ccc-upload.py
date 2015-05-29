@@ -279,11 +279,7 @@ def mediaFromTracker():
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
         sys.exit(-1) 
-                 
-    # set ticket done
-    logging.info("set ticket done")
-    setTicketDone(ticket_id, url, group, host, secret)
-                     
+
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
 
@@ -304,3 +300,6 @@ iCanHazTicket()
 choose_target_from_properties()
 send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 
+# set ticket done
+logging.info("set ticket done")
+setTicketDone(ticket_id, url, group, host, secret)
