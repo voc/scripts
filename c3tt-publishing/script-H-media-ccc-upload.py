@@ -141,6 +141,7 @@ thumb_path = config['env']['thumb_path']
 
 #internal vars
 ticket = None
+ticket_failed = True
 filesize = 0
 length = 0
 sftp = None
@@ -160,10 +161,13 @@ description = None
 profile_slug = None
 folder = None
 mime_type = None
+
+#TODO das sollte ne liste werden
 target_youtube = None
 target_media = None
 
-def choose_target_from_properties():
+#TODO das ist von der logic her IMHO falsch rum das muss schöner werden
+def TargetFromPropertie():
     global target_youtube
     global target_media
 
@@ -208,6 +212,7 @@ def iCanHazTicket():
         global description
         global download_base_url
         global folder
+        #todo this shoul only be used if youtube propertie is set
         global has_youtube_url
         
         #TODO add here some try magic to catch missing properties
@@ -224,10 +229,12 @@ def iCanHazTicket():
         download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
+        #todo this shoul only be used if youtube propertie is set
         if 'YouTube.Url0' in ticket and ticket['YouTube.Url0'] != "":
                 has_youtube_url = True
         else:
                 has_youtube_url = False
+        
         title = ticket['Fahrplan.Title']
         folder = ticket['EncodingProfile.MirrorFolder']
         
@@ -235,13 +242,14 @@ def iCanHazTicket():
                 subtitle = ticket['Fahrplan.Subtitle']
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
-        #debug
+                
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
         
         if not os.path.isfile(video_base + local_filename):
             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
             setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
             sys.exit(-1)
+        
         if not os.path.exists(output):
             logging.error("Output path does not exist (%s)" % (output))
             setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
@@ -297,7 +305,7 @@ def youtubeFromTracker():
         sys.exit(-1)
 
 iCanHazTicket()
-choose_target_from_properties()
+TargetFromPropertie()
 send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 
 # set ticket done
