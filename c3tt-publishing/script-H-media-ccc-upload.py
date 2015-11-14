@@ -217,7 +217,7 @@ def iCanHazTicket():
         
         #TODO add here some try magic to catch missing properties
         guid = ticket['Fahrplan.GUID']
-        slug = ticket['Fahrplan.Slug'] if 'Fahrplan.Slug' in ticket else str(ticket['Fahrplan.ID'])
+        slug = ticket['Fahrplan.Slug'] if 'Fahrplan.Slug' in ticket else str(ticket['Encoding.Basename'])
         slug_c = slug.replace(":","_")    
         acronym = ticket['Project.Slug']
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
