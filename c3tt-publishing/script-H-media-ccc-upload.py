@@ -254,7 +254,7 @@ def iCanHazTicket():
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
 
-        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + " people: " + ", ".join(people) + " tags: " + ", ".tags.join)
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + " people: " + ", ".join(people) + " tags: " + ", ".join(tags))
 
         if not os.path.isfile(video_base + local_filename):
             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
