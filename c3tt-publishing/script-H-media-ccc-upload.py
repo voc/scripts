@@ -14,7 +14,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
+
 import argparse
 import sys
 import os
@@ -30,7 +30,7 @@ import paramiko
 import inspect
 import logging
 
-from c3t_rpc_client import * 
+from c3t_rpc_client import *
 from media_ccc_de_api_client import *
 from auphonic_client import *
 from youtube_client import *
@@ -58,7 +58,7 @@ logging.debug("reading config")
 if not os.path.exists('client.conf'):
     logging.error("Error: config file not found")
     sys.exit(1)
-    
+
 config = configparser.ConfigParser()
 config.read('client.conf')
 source = config['general']['source']
@@ -80,7 +80,7 @@ if source == "c3tt":
     url = config['C3Tracker']['url']
     from_state = config['C3Tracker']['from_state']
     to_state = config['C3Tracker']['to_state']
-    token = config['twitter']['token'] 
+    token = config['twitter']['token']
     token_secret = config['twitter']['token_secret']
     consumer_key = config['twitter']['consumer_key']
     consumer_secret = config['twitter']['consumer_secret']
@@ -129,11 +129,11 @@ thumb_path = config['env']['thumb_path']
 # "ogv" : {"path" : "ogv/",
 #          "ext" : ".ogv",
 #          "mimetype" : "video/ogg"},
-# "mp3" : {"path" : "mp3/", 
+# "mp3" : {"path" : "mp3/",
 #          "ext" : ".mp3",
 #          "mimetype" : "audio/mpeg"},
 # "opus" : {"path" : "opus/",
-#           "ext" : ".opus", 
+#           "ext" : ".opus",
 #           "mimetype" : "audio/opus"},
 # "ogg"  : {"path" : "ogg/",
 #           "ext"  :  ".ogg"}
@@ -156,7 +156,7 @@ slug = None
 slug_c = None #slug without :
 rpc_client = None
 title = None
-subtitle = None 
+subtitle = None
 description = None
 profile_slug = None
 folder = None
@@ -187,7 +187,7 @@ def TargetFromPropertie():
 def iCanHazTicket():
     logging.info("getting ticket from " + url)
     logging.info("=========================================")
-    
+
     #check if we got a new ticket
     global ticket_id
     ticket_id = assignNextUnassignedForState(from_state, to_state, url, group, host, secret)
@@ -208,17 +208,19 @@ def iCanHazTicket():
         global guid
         global slug
         global title
-        global subtitle 
+        global subtitle
         global description
         global download_base_url
         global folder
         #todo this shoul only be used if youtube propertie is set
         global has_youtube_url
-        
+        global people
+        global tags
+
         #TODO add here some try magic to catch missing properties
         guid = ticket['Fahrplan.GUID']
         slug = ticket['Fahrplan.Slug'] if 'Fahrplan.Slug' in ticket else str(ticket['Encoding.Basename'])
-        slug_c = slug.replace(":","_")    
+        slug_c = slug.replace(":","_")
         acronym = ticket['Project.Slug']
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
         title = ticket['Fahrplan.Title']
@@ -234,27 +236,36 @@ def iCanHazTicket():
                 has_youtube_url = True
         else:
                 has_youtube_url = False
-        
-        title = ticket['Fahrplan.Title']
-        folder = ticket['EncodingProfile.MirrorFolder']
-        
+
+        title   = ticket['Fahrplan.Title']
+        folder  = ticket['EncodingProfile.MirrorFolder']
+        # media api accepts an array with people
+        people = ticket['Fahrplan.Person_list'].split(', ')
+        # media api accepts an array with tags
+        if ['Media.Tags'] in ticket:
+            tags = ticket['Media.Tags'].replace(' ', ''). \
+                                        split(',')
+        else:
+            tags = [ ticket[Project.slug] ]
+
+
         if 'Fahrplan.Subtitle' in ticket:
                 subtitle = ticket['Fahrplan.Subtitle']
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
-                
-        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
-        
+
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + " people: " + ", ".join(people) + " tags: " + ", ".tags.join)
+
         if not os.path.isfile(video_base + local_filename):
             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
             setTicketFailed(ticket_id, "Source file does not exist (%s)" % (video_base + local_filename), url, group, host, secret)
             sys.exit(-1)
-        
+
         if not os.path.exists(output):
             logging.error("Output path does not exist (%s)" % (output))
             setTicketFailed(ticket_id, "Output path does not exist (%s)" % (output), url, group, host, secret)
             sys.exit(-1)
-        else: 
+        else:
             if not os.access(output, os.W_OK):
                 logging.error("Output path is not writable (%s)" % (output))
                 setTicketFailed(ticket_id, "Output path is not writable (%s)" % (output), url, group, host, secret)
@@ -268,14 +279,14 @@ def mediaFromTracker():
     logging.info("=========================================")
 
     #create a event on media
-    if profile_slug != "mp3" and profile_slug != "opus":        
+    if profile_slug != "mp3" and profile_slug != "opus":
         try:
-            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
+            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
-    
+
     #publish the media file on media
     if not 'Publishing.Media.MimeType' in ticket:
         setTicketFailed(ticket_id, "Publishing failed: No mime type, please use property Publishing.Media.MimeType in encoding profile! \n" + str(err), url, group, host, secret)
@@ -286,7 +297,7 @@ def mediaFromTracker():
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
-        sys.exit(-1) 
+        sys.exit(-1)
 
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")

@@ -26,7 +26,7 @@ import logging
 logger = logging.getLogger()
 
 #generate thumbnails for media.ccc.de
-def make_thumbs(video_base, local_filename, output):    
+def make_thumbs(video_base, local_filename, output):
     logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
 
     try:
@@ -38,14 +38,14 @@ def make_thumbs(video_base, local_filename, output):
         logger.error("Command %s" % err.cmd)
         raise RuntimeError(err.cmd)
         return False
-         
+
     logger.info("thumbs created")
     return True
-    
+
 # make a new event on media
-def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description):
+def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags):
     logger.info(("## generating new event on " + api_url + " ##"))
-    
+
     #generate the thumbnails (will not overwrite existing thumbs)
     if not os.path.isfile(output + "/" + str(local_filename_base) + ".jpg"):
         if not make_thumbs(video_base, local_filename, output):
@@ -71,8 +71,10 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
 	       'slug' : slug,
 	       'title' : title,
 	       'subtitle' : subtitle,
-	       'description' : description
-	      }     
+	       'description' : description,
+           'persons': people,
+           'tags': tags
+	      }
     logger.debug(payload)
 
     #call media api (and ignore SSL this should be fixed on media site)
@@ -85,7 +87,7 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
 #     except:
 #         logger.error("Unhandelt ssl / retry problem")
 #         return False
-    
+
     if r.status_code == 200 or r.status_code == 201:
         logger.debug(r.text)
         logger.info("new event created")
@@ -103,11 +105,11 @@ def get_file_details(local_filename, video_base, ret):
     if local_filename == None:
         raise RuntimeError("Error: No filename supplied.")
         return False
-        
-    global filesize    
+
+    global filesize
     filesize = os.stat(video_base + local_filename).st_size
     filesize = int(filesize / 1024 / 1024)
-    
+
     try:
         global r
         r = subprocess.check_output('ffprobe -print_format flat -show_format -loglevel quiet ' + video_base + local_filename +' 2>&1 | grep format.duration | cut -d= -f 2 | sed -e "s/\\"//g" -e "s/\..*//g" ', shell=True)
@@ -129,15 +131,15 @@ def get_file_details(local_filename, video_base, ret):
 # publish a file on media
 def publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base):
     logger.info(("## publishing "+ filename + " to " + api_url + " ##"))
-    
+
     #orig_file_url = download_base_url + codecs[args.codecs]['path'] + filename
-    orig_file_url = download_base_url + local_filename 
-    
+    orig_file_url = download_base_url + local_filename
+
     # make sure we have the file size and length
     ret = []
     if not get_file_details(local_filename, video_base, ret):
         return False
-       
+
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
@@ -162,10 +164,10 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     except:
         raise RuntimeError("Unhandelt ssl / retry problem")
         return False
-    
+
     if r.status_code != 200 and r.status_code != 201:
         raise RuntimeError(("ERROR: Could not publish talk: " + str(r.status_code) + " " + r.text))
         return False
-    
+
     logger.info(("publishing " + filename + " done"))
     return True
