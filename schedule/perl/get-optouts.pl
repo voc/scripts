@@ -31,6 +31,6 @@ my $fahrplan = get_schedule("${baseurl}/schedule.xml");
 
 foreach my $event (@{$fahrplan->events}) {
 	if($event->{"recording.optout"} ne 'false') {
-		printf "* [%s %s]\n", $event->{title}, $baseurl . "events/" . $event->{id};
+		printf "* [%s %s]\n", $baseurl . "events/" . $event->{id}, $event->{title};
 	}
 }
