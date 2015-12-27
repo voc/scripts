@@ -209,14 +209,30 @@ def iCanHazTicket():
         global download_base_url
         global folder
         global has_youtube_url
+        global people
+        global tags
         
         #TODO add here some try magic to catch missing properties
-        guid = ticket['Fahrplan.GUID']
-        slug = ticket['Fahrplan.Slug'] if 'Fahrplan.Slug' in ticket else str(ticket['Fahrplan.ID'])
+
+        if 'Fahrplan.Slug' in ticket:
+                slug = ticket['Fahrplan.Slug']	
+        else:
+                slug = str(ticket['Encoding.Basename'])
+
         slug_c = slug.replace(":","_")    
+        guid = ticket['Fahrplan.GUID']
         acronym = ticket['Project.Slug']
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
         title = ticket['Fahrplan.Title']
+        if 'Fahrplan.Person_list' in ticket:
+                people = ticket['Fahrplan.Person_list'].split(', ') 
+        else:
+                people = [ ]
+        if 'Media.Tags' in ticket:
+                tags = ticket['Media.Tags'].replace(' ', ''). \
+                                            split(',')
+        else:
+                tags = [ ticket['Project.Slug'] ]
         local_filename = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
         local_filename_base =  str(ticket['Fahrplan.ID']) + "-" + ticket['EncodingProfile.Slug']
         video_base = str(ticket['Publishing.Path'])
@@ -236,7 +252,7 @@ def iCanHazTicket():
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
         #debug
-        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output)
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + ' people: ' + ", ".join(people) + ' tags: ' + ", ".join(tags))
         
         if not os.path.isfile(video_base + local_filename):
             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
@@ -262,7 +278,7 @@ def mediaFromTracker():
     #create a event on media
     if profile_slug != "mp3" and profile_slug != "opus":        
         try:
-            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description)
+            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
@@ -295,6 +311,7 @@ def youtubeFromTracker():
             props['YouTube.Url'+str(i)] = youtubeUrl
 
         setTicketProperties(ticket_id, props, url, group, host, secret)
+
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
@@ -302,5 +319,6 @@ def youtubeFromTracker():
 
 iCanHazTicket()
 choose_target_from_properties()
-send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
-
+#send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
+logging.info("set ticket done")
+setTicketDone(ticket_id, url, group, host, secret)
