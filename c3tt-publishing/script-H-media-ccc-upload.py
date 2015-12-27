@@ -241,7 +241,13 @@ def iCanHazTicket():
         download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
-        language = str(ticket['Record.Language'])
+        if 'Record.Language' in ticket:
+            language = str(ticket['Record.Language'])
+        else:
+            logging.error("No Record.Language propertie in ticket")
+            setTicketFailed(ticket_id, "No Record.Language propertie in ticket", url, group, host, secret)
+            sys.exit(-1)
+            
         if 'YouTube.Url0' in ticket and ticket['YouTube.Url0'] != "":
                 has_youtube_url = True
         else:
