@@ -43,7 +43,7 @@ def make_thumbs(video_base, local_filename, output):
     return True
     
 # make a new event on media
-def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags):
+def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, language):
     logger.info(("## generating new event on " + api_url + " ##"))
     
     #generate the thumbnails (will not overwrite existing thumbs)
@@ -56,6 +56,8 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
         description = ''
     if subtitle == None:
         subtitle = ''
+    if language == None:
+        language = ''
 #    title = title.replace('"','')
 #    title = title.replace(':','')
     # prepare variables for api call
@@ -73,7 +75,8 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
 	       'subtitle' : subtitle,
 	       'description' : description,
                'persons': people,
-               'tags': tags
+               'tags': tags,
+               'language': language
 	      }     
     logger.debug(payload)
 

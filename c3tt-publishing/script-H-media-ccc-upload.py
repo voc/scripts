@@ -211,6 +211,7 @@ def iCanHazTicket():
         global has_youtube_url
         global people
         global tags
+        global language
         
         #TODO add here some try magic to catch missing properties
 
@@ -240,6 +241,7 @@ def iCanHazTicket():
         download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
+        language = str(ticket['Record.Language'])
         if 'YouTube.Url0' in ticket and ticket['YouTube.Url0'] != "":
                 has_youtube_url = True
         else:
@@ -252,7 +254,7 @@ def iCanHazTicket():
         if 'Fahrplan.Abstract' in ticket:
                 description = ticket['Fahrplan.Abstract']
         #debug
-        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + ' people: ' + ", ".join(people) + ' tags: ' + ", ".join(tags))
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + ' people: ' + ", ".join(people) + ' tags: ' + ", ".join(tags) + ' language: ' + language)
         
         if not os.path.isfile(video_base + local_filename):
             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
@@ -278,7 +280,7 @@ def mediaFromTracker():
     #create a event on media
     if profile_slug != "mp3" and profile_slug != "opus":        
         try:
-            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags)
+            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, language)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
