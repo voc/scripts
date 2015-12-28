@@ -95,7 +95,7 @@ def uploadVideo(ticket, accessToken, channelId):
     metadata = {
         'snippet':
         {
-            'title': str(ticket['Fahrplan.Title']),
+            'title': str(ticket['YouTube.TitelPrefix'] + ' ' + ticket['Fahrplan.Title']),
             'description': description,
             'channelId': channelId,
             'tags': selectTags(ticket)
