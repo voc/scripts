@@ -297,7 +297,7 @@ def mediaFromTracker():
         langs = language.rsplit('-')
         language = str(langs[lang_id])
         filename = str(ticket['Encoding.LanguageTemplate']) % (language)
-        filename = filename + str(ticket['EncodingProfile.Extension']
+        filename = filename + str(ticket['EncodingProfile.Extension'])
         #filename = str(slug + '-' + str(ticket['Fahrplan.ID']) + '-' + language + '-' + str(ticket['Encoding.LanguageTemplate']) + '.' + str(ticket['EncodingProfile.Extension'] )
         logging.debug('Choosing ' + language +' with LanguageIndex ' + lang_id + ' and filename ' + filename)
          
