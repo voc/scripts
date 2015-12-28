@@ -289,7 +289,7 @@ def mediaFromTracker():
     global language
     global filename
     #create a event on media
-    if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":          
+    if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":               
         try:
             make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, language)
         except RuntimeError as err:
@@ -308,6 +308,45 @@ def mediaFromTracker():
         filename = filename + '.' + str(ticket['EncodingProfile.Extension'])
         #filename = str(slug + '-' + str(ticket['Fahrplan.ID']) + '-' + language + '-' + str(ticket['Encoding.LanguageTemplate']) + '.' + str(ticket['EncodingProfile.Extension'] )
         logging.debug('Choosing ' + language +' with LanguageIndex ' + str(lang_id) + ' and filename ' + filename)
+    
+    if profile_slug == 'hd' and re.match('(..)-(..)', ticket['Record.Language']):
+            # if a second language is configured, remux the video to only have the one audio track and upload it twice
+        logger.debug('remuxing dual-language video into two parts')
+
+        outfile1 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
+        outfile2 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio2." + ticket['EncodingProfile.Extension']
+        langs = language.rsplit('-')
+        filename1 = str(ticket['Encoding.LanguageTemplate']) % (str(langs[0])) + '.' + str(ticket['EncodingProfile.Extension'])
+        filename2 = str(ticket['Encoding.LanguageTemplate']) % (str(langs[1])) + '.' + str(ticket['EncodingProfile.Extension'])
+        
+        logger.debug('remuxing with original audio to '+outfile1)
+
+        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', infile, '-map', '0:0', '-map', '0:1', '-c', 'copy', outfile1]) != 0:
+            raise RuntimeError('error remuxing '+infile+' to '+outfile1)
+
+        logger.debug('remuxing with translated audio to '+outfile2)
+
+
+        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', infile, '-map', '0:0', '-map', '0:2', '-c', 'copy', outfile2]) != 0:
+            raise RuntimeError('error remuxing '+infile+' to '+outfile2)
+
+        try:
+            publish(outfile1, filename1, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web' , 'h264-hd-web', video_base, str(langs[0]))
+        except RuntimeError as err:
+            setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+            logging.error("Publishing failed: \n" + str(err))
+            sys.exit(-1) 
+    
+        try:
+            publish(outfile2, filename2, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web', 'h264-hd-web', video_base, str(langs[1]))
+        except RuntimeError as err:
+            setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+            logging.error("Publishing failed: \n" + str(err))
+            sys.exit(-1) 
+        
+        logger.info("deleting remuxed versions: %s and %s" % (outfile1, outfile2))
+        os.remove(outfile1)
+        os.remove(outfile2)
          
     #publish the media file on media
     if not 'Publishing.Media.MimeType' in ticket:
@@ -315,7 +354,7 @@ def mediaFromTracker():
     mime_type = ticket['Publishing.Media.MimeType']
 
     try:
-        publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base, language)
+        publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
