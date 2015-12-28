@@ -305,7 +305,7 @@ def mediaFromTracker():
     mime_type = ticket['Publishing.Media.MimeType']
 
     try:
-        publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base)
+        publish(local_filename, filename, api_url, download_base_url, api_key, guid, filesize, length, mime_type, folder, video_base, language)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
