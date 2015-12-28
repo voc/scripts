@@ -297,6 +297,10 @@ def mediaFromTracker():
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
     else:
+        if not 'Encoding.LanguageIndex' in ticket:
+            logging.error("Encoding.LanguageIndex")
+            setTicketFailed(ticket_id, "Creating event failed, Encoding.LanguageIndex not defined", url, group, host, secret)
+            sys.exit(-1) 
         lang_id = int(ticket['Encoding.LanguageIndex'])
         langs = language.rsplit('-')
         language = str(langs[lang_id])
