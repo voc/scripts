@@ -250,7 +250,9 @@ def iCanHazTicket():
             logging.error("No Record.Language propertie in ticket")
             setTicketFailed(ticket_id, "No Record.Language propertie in ticket", url, group, host, secret)
             sys.exit(-1)
-            
+        
+        logging.debug("Language from ticket " + str(language))
+        
         if 'YouTube.Url0' in ticket and ticket['YouTube.Url0'] != "":
                 has_youtube_url = True
         else:
@@ -287,7 +289,7 @@ def mediaFromTracker():
     logging.info("=========================================")
 
     #create a event on media
-    if profile_slug != "mp3" and profile_slug != "opus":          
+    if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":          
         try:
             make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, language)
         except RuntimeError as err:
