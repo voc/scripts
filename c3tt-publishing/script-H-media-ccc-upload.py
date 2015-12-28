@@ -162,6 +162,8 @@ folder = None
 mime_type = None
 target_youtube = None
 target_media = None
+language = None #language field in ticket
+lang = None
 
 def choose_target_from_properties():
     global target_youtube
