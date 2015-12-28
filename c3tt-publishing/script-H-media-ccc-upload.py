@@ -214,7 +214,6 @@ def iCanHazTicket():
         global people
         global tags
         global language #language field in ticket
-        global lang #lang for single audio release
         
         #TODO add here some try magic to catch missing properties
 
@@ -287,7 +286,8 @@ def iCanHazTicket():
 def mediaFromTracker():
     logging.info("creating event on " + api_url)
     logging.info("=========================================")
-
+    global language
+    global filename
     #create a event on media
     if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":          
         try:
