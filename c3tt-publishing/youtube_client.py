@@ -92,10 +92,15 @@ def uploadVideo(ticket, accessToken, channelId):
     if 'Publishing.Media.Url' in ticket and 'Fahrplan.Slug' in ticket:
         description = os.path.join(ticket['Publishing.Media.Url'], ticket['Fahrplan.Slug']+'.html') + '\n\n' + description
 
+    if ticket['YouTube.TitelPrefix'] in ticket:
+        tmp_titel = str(ticket['YouTube.TitelPrefix'] + ' ' + ticket['Fahrplan.Title'])
+    else :
+        tmp_titel = ticket['Fahrplan.Title']
+
     metadata = {
         'snippet':
         {
-            'title': str(ticket['YouTube.TitelPrefix'] + ' ' + ticket['Fahrplan.Title']),
+            'title': str(tmp_titel),
             'description': description,
             'channelId': channelId,
             'tags': selectTags(ticket)
