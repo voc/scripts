@@ -211,7 +211,8 @@ def iCanHazTicket():
         global has_youtube_url
         global people
         global tags
-        global language
+        global language #language field in ticket
+        global lang #lang for single audio release
         
         #TODO add here some try magic to catch missing properties
 
@@ -284,14 +285,19 @@ def mediaFromTracker():
     logging.info("=========================================")
 
     #create a event on media
-    if profile_slug != "mp3" and profile_slug != "opus":        
+    if profile_slug != "mp3" and profile_slug != "opus":          
         try:
             make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, language)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
-    
+    else:
+        lang_id = ticket['Encoding.LanguageIndex']
+        langs = language.rsplit('-')
+        language = langs[lang_id]
+        logging.debug('Choosing ' + language +' with LanguageIndex ' + lang_id)
+         
     #publish the media file on media
     if not 'Publishing.Media.MimeType' in ticket:
         setTicketFailed(ticket_id, "Publishing failed: No mime type, please use property Publishing.Media.MimeType in encoding profile! \n" + str(err), url, group, host, secret)
