@@ -297,7 +297,7 @@ def mediaFromTracker():
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
     else:
-        lang_id = ticket['Encoding.LanguageIndex']
+        lang_id = int(ticket['Encoding.LanguageIndex'])
         langs = language.rsplit('-')
         language = str(langs[lang_id])
         filename = str(ticket['Encoding.LanguageTemplate']) % (language)
