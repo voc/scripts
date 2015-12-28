@@ -303,7 +303,7 @@ def mediaFromTracker():
         filename = str(ticket['Encoding.LanguageTemplate']) % (language)
         filename = filename + str(ticket['EncodingProfile.Extension'])
         #filename = str(slug + '-' + str(ticket['Fahrplan.ID']) + '-' + language + '-' + str(ticket['Encoding.LanguageTemplate']) + '.' + str(ticket['EncodingProfile.Extension'] )
-        logging.debug('Choosing ' + language +' with LanguageIndex ' + lang_id + ' and filename ' + filename)
+        logging.debug('Choosing ' + language +' with LanguageIndex ' + str(lang_id) + ' and filename ' + filename)
          
     #publish the media file on media
     if not 'Publishing.Media.MimeType' in ticket:
