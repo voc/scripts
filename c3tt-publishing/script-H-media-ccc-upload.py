@@ -314,7 +314,9 @@ def mediaFromTracker():
         logger.debug('remuxing dual-language video into two parts')
 
         outfile1 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
+        outfilename1 = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
         outfile2 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio2." + ticket['EncodingProfile.Extension']
+        outfilename2 = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio2." + ticket['EncodingProfile.Extension']
         langs = language.rsplit('-')
         filename1 = str(ticket['Encoding.LanguageTemplate']) % (str(langs[0])) + '.' + str(ticket['EncodingProfile.Extension'])
         filename2 = str(ticket['Encoding.LanguageTemplate']) % (str(langs[1])) + '.' + str(ticket['EncodingProfile.Extension'])
@@ -331,14 +333,14 @@ def mediaFromTracker():
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         try:
-            publish(outfile1, filename1, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web' , 'h264-hd-web', video_base, str(langs[0]))
+            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web' , 'h264-hd-web', video_base, str(langs[0]))
         except RuntimeError as err:
             setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
             sys.exit(-1) 
     
         try:
-            publish(outfile2, filename2, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web', 'h264-hd-web', video_base, str(langs[1]))
+            publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web', 'h264-hd-web', video_base, str(langs[1]))
         except RuntimeError as err:
             setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
