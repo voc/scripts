@@ -346,9 +346,9 @@ def mediaFromTracker():
             logging.error("Publishing failed: \n" + str(err))
             sys.exit(-1) 
         
-        logger.info("deleting remuxed versions: %s and %s" % (outfile1, outfile2))
-        os.remove(outfile1)
-        os.remove(outfile2)
+        #logger.info("deleting remuxed versions: %s and %s" % (outfile1, outfile2))
+        #os.remove(outfile1)
+        #os.remove(outfile2)
          
     #publish the media file on media
     if not 'Publishing.Media.MimeType' in ticket:
