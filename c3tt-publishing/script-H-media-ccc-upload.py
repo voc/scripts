@@ -385,6 +385,6 @@ def youtubeFromTracker():
 
 iCanHazTicket()
 choose_target_from_properties()
-#send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
+send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 logging.info("set ticket done")
 #setTicketDone(ticket_id, url, group, host, secret)
