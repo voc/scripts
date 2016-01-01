@@ -289,9 +289,11 @@ def mediaFromTracker():
     global language
     global filename
     #create a event on media
-    if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":               
+    if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":
+        langs = language.rsplit('-')
+        orig_language = str(langs[0]) 
         try:
-            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, language)
+            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, orig_language)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
