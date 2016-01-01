@@ -335,7 +335,9 @@ def mediaFromTracker():
         try:
             publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web' , 'h264-hd-web', video_base, str(langs[0]))
         except RuntimeError as err:
-            setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+#f*ck signature:
+#            setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+            setTicketFailed(ticket_id, "Publishing failed: runtime error \n", url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
             sys.exit(-1) 
     
@@ -364,7 +366,7 @@ def mediaFromTracker():
                  
     # set ticket done
     #logging.info("set ticket done")
-    #setTicketDone(ticket_id, url, group, host, secret)
+    setTicketDone(ticket_id, url, group, host, secret)
                      
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
@@ -388,3 +390,4 @@ choose_target_from_properties()
 send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 logging.info("set ticket done")
 setTicketDone(ticket_id, url, group, host, secret)
+
