@@ -368,7 +368,7 @@ def mediaFromTracker():
                  
     # set ticket done
     #logging.info("set ticket done")
-    setTicketDone(ticket_id, url, group, host, secret)
+    #setTicketDone(ticket_id, url, group, host, secret)
                      
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
