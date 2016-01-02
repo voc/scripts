@@ -50,7 +50,7 @@ def C3TClient(url, method, group, host, secret, args):
         i = 0
         while i < len(args):
             arg = args[i]
-            if isinstance(arg, bytes)
+            if isinstance(arg, bytes):
                 arg = arg.decode()
             if isinstance(arg, dict):
                 kvs = []
@@ -116,6 +116,11 @@ def C3TClient(url, method, group, host, secret, args):
         logger.error("Error code: %d" % err.errcode)
         logger.error("Error message: %s" % err.errmsg)
         sys.exit(-1)
+    except OSError as err:
+        logger.error("A OS error occurred")
+        logger.error("Error code: %d" % err.errcode)
+        logger.error("Error message: %s" % err.errmsg)
+        sys.exit(-1)
     #### return the result
     return result
 
@@ -163,8 +168,9 @@ def setTicketDone(id, url, group, host, secret):
     tmp_args = [id]
     xml = open_rpc("C3TT.setTicketDone", tmp_args , url, group, host, secret)
     logger.debug(xml)
-    
+
 ### set ticket status on failed an supply a error text
 def setTicketFailed(id,error , url, group, host, secret):
-    tmp_args = [id, error]
+    enc_error = error.encode('ascii', 'xmlcharrefreplace')
+    tmp_args = [id, enc_error]
     xml = open_rpc("C3TT.setTicketFailed", tmp_args , url, group, host, secret)
