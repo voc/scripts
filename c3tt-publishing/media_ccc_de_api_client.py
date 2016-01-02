@@ -56,8 +56,8 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
         description = ''
     if subtitle == None:
         subtitle = ''
-    if language == None:
-        language = ''
+    if orig_language == None:
+        orig_language = ''
 #    title = title.replace('"','')
 #    title = title.replace(':','')
     # prepare variables for api call
