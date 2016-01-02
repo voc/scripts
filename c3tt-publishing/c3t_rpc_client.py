@@ -114,6 +114,12 @@ def C3TClient(url, method, group, host, secret, args):
         logger.error("Error code: %d" % err.errcode)
         logger.error("Error message: %s" % err.errmsg)
         sys.exit(-1)
+    except OSError as err:
+        logger.error("A OS error occurred")
+        logger.error("Error code: %d" % err.errcode)
+        logger.error("Error message: %s" % err.errmsg)
+        sys.exit(-1)
+
     #### return the result
     return result
 
