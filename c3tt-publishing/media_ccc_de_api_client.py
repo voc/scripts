@@ -66,14 +66,14 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
     payload = {'api_key' : api_key,
                'acronym' : acronym,
                'event' : {'guid' : guid,
-               		  'poster_url' : poster_url,
-               		  'thumb_url' : thumb_url,
-	       	 	  'slug' : slug,
-	                  'title' : title,
-	                  'subtitle' : subtitle,
-	                  'description' : description,
-           	          'persons': people,
-           		  'tags': tags
+			  'poster_url' : poster_url,
+			  'thumb_url' : thumb_url,
+			  'slug' : slug,
+			  'title' : title,
+			  'subtitle' : subtitle,
+			  'description' : description,
+			  'persons': people,
+			  'tags': tags
            	          }
 	      }
     logger.debug(payload)
