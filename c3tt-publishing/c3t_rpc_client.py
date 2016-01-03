@@ -50,8 +50,6 @@ def C3TClient(url, method, group, host, secret, args):
         i = 0
         while i < len(args):
             arg = args[i]
-            if isinstance(arg, bytes)
-                arg = arg.decode()
             if isinstance(arg, dict):
                 kvs = []
                 for k, v in args[i].items():
