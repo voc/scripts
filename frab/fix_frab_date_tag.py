@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 import urllib.request
 import sys
 
-schedule_url = "ADD URL HERE" 
+schedule_url = "ADD URL HERE"
 print( "## getting meta data from " + schedule_url + " ##")
 global frab_data
 try:
@@ -10,7 +10,7 @@ try:
 except:
     print( "Could not load schedule xml. Please check url")
     sys.exit(1)
-    
+
 tree = ET.parse(frab_data)
 root = tree.getroot()
 
