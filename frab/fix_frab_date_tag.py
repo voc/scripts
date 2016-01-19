@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import urllib.request
 import sys
+from time import strftime, localtime
 
 schedule_url = "ADD URL HERE"
 print( "## getting meta data from " + schedule_url + " ##")
@@ -13,6 +14,12 @@ except:
 
 tree = ET.parse(frab_data)
 root = tree.getroot()
+
+download_time = localtime()
+formatted_download_time = strftime("%Y-%m-%d %H:%M", download_time)
+
+root.append(ET.Element('version'))
+root.find('version').text = formatted_download_time
 
 for day in root.iter('day'):
     date = day.attrib['date']
