@@ -327,13 +327,13 @@ def mediaFromTracker():
         
         logger.debug('remuxing with original audio to '+outfile1)
 
-        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', video_base + local_filename, '-map', '0:0', '-map', '0:1', '-c', 'copy', outfile1]) != 0:
+        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', video_base + local_filename, '-map', '0:0', '-map', '0:1', '-c', 'copy', '-movflags', 'faststart', outfile1]) != 0:
             raise RuntimeError('error remuxing '+infile+' to '+outfile1)
 
         logger.debug('remuxing with translated audio to '+outfile2)
 
 
-        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', video_base + local_filename, '-map', '0:0', '-map', '0:2', '-c', 'copy', outfile2]) != 0:
+        if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', video_base + local_filename, '-map', '0:0', '-map', '0:2', '-c', 'copy', '-movflags', 'faststart', outfile2]) != 0:
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         try:
