@@ -22,7 +22,10 @@ import requests
 import json
 import sys
 import os
+import time
 import logging
+from _hotshot import resolution
+from string import split
 logger = logging.getLogger()
 
 #generate thumbnails for media.ccc.de
@@ -42,42 +45,58 @@ def make_thumbs(video_base, local_filename, output):
     logger.info("thumbs created")
     return True
     
-# make a new event on media
-def make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, orig_language):
+#=== make a new event on media
+def make_event(ticket, api_url, api_key,description, tags, orig_language):
     logger.info(("## generating new event on " + api_url + " ##"))
     
+
+    #TODO move this somewehre else 
     #generate the thumbnails (will not overwrite existing thumbs)
-    if not os.path.isfile(output + "/" + str(local_filename_base) + ".jpg"):
-        if not make_thumbs(video_base, local_filename, output):
+    if not os.path.isfile(str(ticket['Publishing.Path']) + "/thumbs/" + str(local_filename_base) + ".jpg"):
+        if not make_thumbs(str(ticket['Publishing.Path']), ticket['local_filename'], str(ticket['Publishing.Path'])) + "/thumbs":
             return False
     else:
         logger.info("thumb exists skipping")
-    if description == None:
-        description = ''
-    if subtitle == None:
-        subtitle = ''
+
+    #prepare some variables for the api call
+    local_filename_base = ticket['local_filename_base']
+    url = api_url + 'events'
+    
+    if 'Fahrplan.Person_list' in ticket:
+        people = ticket['Fahrplan.Person_list'].split(', ') 
+    else:
+        people = [ ]
+     
+    if 'Media.Tags' in ticket:
+        tags = ticket['Media.Tags'].replace(' ', '').split(',')
+    else:
+        tags = [ ticket['Project.Slug'] ]
+ 
     if orig_language == None:
         orig_language = ''
-#    title = title.replace('"','')
-#    title = title.replace(':','')
-    # prepare variables for api call
-    thumb_url = download_base_url + "thumbs/" + str(local_filename_base) + ".jpg"
-    poster_url = download_base_url + "thumbs/" + str(local_filename_base) + "_preview.jpg"
-    url = api_url + 'events'
+                
+    # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/events_controller.rb this changes in blink of an eye
+    # DONT EVEN BLINK !!!!    
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
-               'acronym' : acronym,
-               'guid' : guid,
-               'poster_url' : poster_url,
-               'thumb_url' : thumb_url,
-	       'slug' : slug,
-	       'title' : title,
-	       'subtitle' : subtitle,
-	       'description' : description,
-               'persons': people,
-               'tags': tags,
-               'original_language': orig_language
-	      }     
+               'guid' : str(ticket['Fahrplan.GUID']),
+               'event' : {
+                          'slug' : str(ticket['Fahrplan.Slug']),
+                          'title' : str(ticket['Fahrplan.Title']),
+                          'subtitle' : str(ticket['Fahrplan.Subtitle']),
+                          'link' : "https://c3voc.de",
+                          'original_language': orig_language,
+                          'thumb_filename' : str(local_filename_base) + ".jpg",
+                          'poster_filename' : str(local_filename_base) + "_preview.jpg",
+                          'conference_id' : conference_id,
+                          'description' : str(ticket['Fahrplan.Abstract']),
+                          'date' : str(ticket['Fahrplan.Date']),
+                          'persons': people,
+                          'tags': tags,
+                          'promoted' : False,
+                          'release_date' : str(time.strftime("%H:%M:%S"))
+                        }
+    }     
     logger.debug(payload)
 
     #call media api (and ignore SSL this should be fixed on media site)
@@ -103,7 +122,7 @@ def make_event(api_url, download_base_url, local_filename, local_filename_base, 
             raise RuntimeError(("ERROR: Could not add event: " + str(r.status_code) + " " + r.text))
             return False
 
-# get filesize and length of the media file
+#=== get filesize and length of the media file
 def get_file_details(local_filename, video_base, ret):
     if local_filename == None:
         raise RuntimeError("Error: No filename supplied.")
@@ -122,6 +141,18 @@ def get_file_details(local_filename, video_base, ret):
     #result = commands.getstatusoutput("ffprobe " + output + path + filename + " 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,// ")
     global length
     length = int(r.decode())
+    
+    try:
+        global r
+        r = subprocess.check_output("ffmpeg -i desinformation\ mp4\ gut.mp4 2>&1 | grep Stream | grep -oP ', \K[0-9]+x[0-9]+''")
+    except:
+        raise RuntimeError("ERROR: could not get duration " + exc_value)
+        return False
+    resolution = r.decode()
+    resolution = split(resolution, 'x')
+    width = resolution[0]
+    height = resolution[1]
+    
     if length == 0:
         raise RuntimeError("Error: file length is 0")
         return False
@@ -129,32 +160,35 @@ def get_file_details(local_filename, video_base, ret):
         logger.debug("filesize: " + str(filesize) + " length: " + str(length))
         ret.append(filesize)
         ret.append(length)
+        ret.append(width)
+        rest.append(height)
         return True
 
-# publish a file on media
-def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language):
+#=== publish a file on media
+def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5):
     logger.info(("## publishing "+ filename + " to " + api_url + " ##"))
-    
-    #orig_file_url = download_base_url + codecs[args.codecs]['path'] + filename
-    orig_file_url = download_base_url + local_filename 
     
     # make sure we have the file size and length
     ret = []
     if not get_file_details(local_filename, video_base, ret):
         return False
-       
+    
+    # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/recordings_controller.rb and DONT EVEN BLINK!!!
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
                'guid' : guid,
-               'recording' : {'original_url' : orig_file_url,
+               'recording' : {'folder' : folder,
                               'filename' : filename,
-                              'folder' : folder,
                               'mime_type' : mime_type,
+                              'language' : language,
+                              'high_quality' : hq,
+                              'html5' : html5,
                               'size' : str(ret[0]),
-                              'length' : str(ret[1]),
-                              'language' : language
-                              }
+                              'width' : str(ret[2]),
+                              'height' : str(ret[3]),
+                              'length' : str(ret[1])
+                            }
                }
     logger.debug(payload)
     try:

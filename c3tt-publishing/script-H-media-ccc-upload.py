@@ -219,10 +219,10 @@ def iCanHazTicket():
         
         #TODO add here some try magic to catch missing properties
 
-        if 'Fahrplan.Slug' in ticket:
-                slug = ticket['Fahrplan.Slug']	
-        else:
-                slug = str(ticket['Encoding.Basename'])
+        #if 'Fahrplan.Slug' in ticket:
+        slug = ticket['Fahrplan.Slug']	
+        #else:
+        #        slug = str(ticket['Encoding.Basename'])
 
         slug_c = slug.replace(":","_")    
         guid = ticket['Fahrplan.GUID']
@@ -239,7 +239,9 @@ def iCanHazTicket():
         else:
                 tags = [ ticket['Project.Slug'] ]
         local_filename = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "." + ticket['EncodingProfile.Extension']
+        ticket['local_filename'] = local_filename
         local_filename_base =  str(ticket['Fahrplan.ID']) + "-" + ticket['EncodingProfile.Slug']
+        ticket['local_filename_base'] = local_filename_base
         video_base = str(ticket['Publishing.Path'])
         output = str(ticket['Publishing.Path']) + "/"+ str(thumb_path)
         download_base_url =  str(ticket['Publishing.Base.Url'])
@@ -254,6 +256,14 @@ def iCanHazTicket():
         
         logging.debug("Language from ticket " + str(language))
         
+        
+        if not 'Fahrplan.Abstract' in ticket:
+            ticket['Fahrplan.Abstract'] = ''
+        if not 'Frahrplan.Subtitle' in ticket:
+            ticket['Fahrplan.Subtitle'] = ''
+
+        
+        
         if 'YouTube.Url0' in ticket and ticket['YouTube.Url0'] != "":
                 has_youtube_url = True
         else:
@@ -261,11 +271,11 @@ def iCanHazTicket():
         title = ticket['Fahrplan.Title']
         folder = ticket['EncodingProfile.MirrorFolder']
         
-        if 'Fahrplan.Subtitle' in ticket:
-                subtitle = ticket['Fahrplan.Subtitle']
-        if 'Fahrplan.Abstract' in ticket:
-                description = ticket['Fahrplan.Abstract']
-        #debug
+        #if 'Fahrplan.Subtitle' in ticket:
+        subtitle = ticket['Fahrplan.Subtitle']
+        #if 'Fahrplan.Abstract' in ticket:
+        #        description = ticket['Fahrplan.Abstract']
+      
         logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + ' people: ' + ", ".join(people) + ' tags: ' + ", ".join(tags) + ' language: ' + language)
         
         if not os.path.isfile(video_base + local_filename):
@@ -290,12 +300,13 @@ def mediaFromTracker():
     logging.info("=========================================")
     global language
     global filename
+    mutlilang = False
     #create a event on media
     if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":
         langs = language.rsplit('-')
         orig_language = str(langs[0]) 
         try:
-            make_event(api_url, download_base_url, local_filename, local_filename_base, api_key, acronym, guid, video_base, output, slug, title, subtitle, description, people, tags, orig_language)
+            make_event(ticket, api_url, api_key, orig_language)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
@@ -317,6 +328,8 @@ def mediaFromTracker():
             # if a second language is configured, remux the video to only have the one audio track and upload it twice
         logger.debug('remuxing dual-language video into two parts')
 
+        mutlilang = True;
+
         outfile1 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
         outfilename1 = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
         outfile2 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio2." + ticket['EncodingProfile.Extension']
@@ -337,7 +350,7 @@ def mediaFromTracker():
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         try:
-            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web' , 'h264-hd-web', video_base, str(langs[0]))
+            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vide/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True)
         except RuntimeError as err:
 #f*ck signature:
 #            setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
@@ -346,7 +359,7 @@ def mediaFromTracker():
             sys.exit(-1) 
     
         try:
-            publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'vnd.voc/mp4-web', 'h264-hd-web', video_base, str(langs[1]))
+            publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[1]), True, True)
         except RuntimeError as err:
             setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
@@ -360,9 +373,21 @@ def mediaFromTracker():
     if not 'Publishing.Media.MimeType' in ticket:
         setTicketFailed(ticket_id, "Publishing failed: No mime type, please use property Publishing.Media.MimeType in encoding profile! \n" + str(err), url, group, host, secret)
     mime_type = ticket['Publishing.Media.MimeType']
-
+    
+    #set hq filed based on ticket encoding profile slug
+    if (ticket['Encoding.Slug'].contains('hd')):
+        hq = True
+    else:
+        hq = False
+    
+    #if we have bevor decided to do two language web release we dont want to set the html5 flag for the master 
+    if (mutlilang):
+        html5 = False
+    else:
+        html5 = True
+    
     try:
-        publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language)
+        publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, width, hight, hq, html5)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
