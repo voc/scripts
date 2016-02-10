@@ -28,7 +28,7 @@ from _hotshot import resolution
 from string import split
 logger = logging.getLogger()
 
-#generate thumbnails for media.ccc.de
+#== generate thumbnails for media.ccc.de
 def make_thumbs(video_base, local_filename, output):    
     logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
 
@@ -49,15 +49,6 @@ def make_thumbs(video_base, local_filename, output):
 def make_event(ticket, api_url, api_key,description, tags, orig_language):
     logger.info(("## generating new event on " + api_url + " ##"))
     
-
-    #TODO move this somewehre else 
-    #generate the thumbnails (will not overwrite existing thumbs)
-    if not os.path.isfile(str(ticket['Publishing.Path']) + "/thumbs/" + str(local_filename_base) + ".jpg"):
-        if not make_thumbs(str(ticket['Publishing.Path']), ticket['local_filename'], str(ticket['Publishing.Path'])) + "/thumbs":
-            return False
-    else:
-        logger.info("thumb exists skipping")
-
     #prepare some variables for the api call
     local_filename_base = ticket['local_filename_base']
     url = api_url + 'events'

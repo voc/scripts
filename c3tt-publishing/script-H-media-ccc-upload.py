@@ -118,28 +118,6 @@ if source != 'c3tt':
 #this is also used as postfix for the publishing dir
 thumb_path = config['env']['thumb_path']
 
-# #codec / container related paths
-# #this paths should be the same on media and local !!
-# #if you want to add new codecs make sure media.ccc.de knows the mimetype BEFORE you push something
-# codecs = {
-# "h264" : {"path" : "mp4/",
-#           "ext" : ".mp4",
-#           "mimetype" : "video/mp4"},
-# "webm" : {"path" : "webm/",
-#           "ext": ".webm",
-#           "mimetype" : "video/webm"},
-# "ogv" : {"path" : "ogv/",
-#          "ext" : ".ogv",
-#          "mimetype" : "video/ogg"},
-# "mp3" : {"path" : "mp3/", 
-#          "ext" : ".mp3",
-#          "mimetype" : "audio/mpeg"},
-# "opus" : {"path" : "opus/",
-#           "ext" : ".opus", 
-#           "mimetype" : "audio/opus"},
-# "ogg"  : {"path" : "ogg/",
-#           "ext"  :  ".ogg"}
-# }
 
 #internal vars
 ticket = None
@@ -303,8 +281,19 @@ def mediaFromTracker():
     mutlilang = False
     #create a event on media
     if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":
+        #generate the thumbnails (will not overwrite existing thumbs)
+        if not os.path.isfile(str(ticket['Publishing.Path']) + "/thumbs/" + str(local_filename_base) + ".jpg"):
+            if not make_thumbs(str(ticket['Publishing.Path']), ticket['local_filename'], str(ticket['Publishing.Path'])) + "/thumbs":
+                return False
+        else:
+            logger.info("thumbs exist. skipping")
+        
+        #get original language. We assume this is always the first language
         langs = language.rsplit('-')
         orig_language = str(langs[0]) 
+        
+        #create the event
+        #TODO at the moment we just try this and look on the error. We should store event id and ask the api
         try:
             make_event(ticket, api_url, api_key, orig_language)
         except RuntimeError as err:
@@ -312,6 +301,7 @@ def mediaFromTracker():
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
     else:
+        #get the language of the encoding. We handle here multi lang releases
         if not 'Encoding.LanguageIndex' in ticket:
             logging.error("Encoding.LanguageIndex")
             setTicketFailed(ticket_id, "Creating event failed, Encoding.LanguageIndex not defined", url, group, host, secret)
@@ -325,11 +315,13 @@ def mediaFromTracker():
         logging.debug('Choosing ' + language +' with LanguageIndex ' + str(lang_id) + ' and filename ' + filename)
     
     if profile_slug == 'hd' and re.match('(..)-(..)', ticket['Record.Language']):
-            # if a second language is configured, remux the video to only have the one audio track and upload it twice
+        #if a second language is configured, remux the video to only have the one audio track and upload it twice
         logger.debug('remuxing dual-language video into two parts')
 
+        #remember that this is multilang release
         mutlilang = True;
 
+        #prepare filenames 
         outfile1 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
         outfilename1 = str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio1." + ticket['EncodingProfile.Extension']
         outfile2 = str(ticket['Publishing.Path']) + str(ticket['Fahrplan.ID']) + "-" +ticket['EncodingProfile.Slug'] + "-audio2." + ticket['EncodingProfile.Extension']
@@ -338,8 +330,9 @@ def mediaFromTracker():
         filename1 = str(ticket['Encoding.LanguageTemplate']) % (str(langs[0])) + '.' + str(ticket['EncodingProfile.Extension'])
         filename2 = str(ticket['Encoding.LanguageTemplate']) % (str(langs[1])) + '.' + str(ticket['EncodingProfile.Extension'])
         
+        #mux two videos wich one language each
         logger.debug('remuxing with original audio to '+outfile1)
-
+        
         if subprocess.call(['ffmpeg', '-y', '-v', 'warning', '-nostdin', '-i', video_base + local_filename, '-map', '0:0', '-map', '0:1', '-c', 'copy', '-movflags', 'faststart', outfile1]) != 0:
             raise RuntimeError('error remuxing '+infile+' to '+outfile1)
 
@@ -352,22 +345,18 @@ def mediaFromTracker():
         try:
             publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vide/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True)
         except RuntimeError as err:
-#f*ck signature:
-#            setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
+            
+            #The error string sometime break the signature setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             setTicketFailed(ticket_id, "Publishing failed: runtime error \n", url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
             sys.exit(-1) 
-    
+  
         try:
             publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[1]), True, True)
         except RuntimeError as err:
             setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
             sys.exit(-1) 
-        
-        #logger.info("deleting remuxed versions: %s and %s" % (outfile1, outfile2))
-        #os.remove(outfile1)
-        #os.remove(outfile2)
          
     #publish the media file on media
     if not 'Publishing.Media.MimeType' in ticket:
@@ -380,7 +369,7 @@ def mediaFromTracker():
     else:
         hq = False
     
-    #if we have bevor decided to do two language web release we dont want to set the html5 flag for the master 
+    #if we have before decided to do two language web release we don't want to set the html5 flag for the master 
     if (mutlilang):
         html5 = False
     else:
@@ -393,10 +382,7 @@ def mediaFromTracker():
         logging.error("Publishing failed: \n" + str(err))
         sys.exit(-1) 
                  
-    # set ticket done
-    #logging.info("set ticket done")
-    #setTicketDone(ticket_id, url, group, host, secret)
-                     
+                                      
 def auphonicFromTracker():
     logging.info("Pushing file to Auphonic")
 
