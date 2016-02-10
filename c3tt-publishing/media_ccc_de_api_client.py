@@ -74,7 +74,9 @@ def make_event(ticket, api_url, api_key,description, tags, orig_language):
  
     if orig_language == None:
         orig_language = ''
-                
+    
+    
+       
     # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/events_controller.rb this changes in blink of an eye
     # DONT EVEN BLINK !!!!    
     headers = {'CONTENT-TYPE' : 'application/json'}
@@ -88,7 +90,7 @@ def make_event(ticket, api_url, api_key,description, tags, orig_language):
                           'original_language': orig_language,
                           'thumb_filename' : str(local_filename_base) + ".jpg",
                           'poster_filename' : str(local_filename_base) + "_preview.jpg",
-                          'conference_id' : conference_id,
+                          'conference_id' : str(ticket['Farhplan.Slug']),
                           'description' : str(ticket['Fahrplan.Abstract']),
                           'date' : str(ticket['Fahrplan.Date']),
                           'persons': people,
