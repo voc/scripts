@@ -28,6 +28,87 @@ from _hotshot import resolution
 from string import split
 logger = logging.getLogger()
 
+# SCP functions
+#== connect to the upload host 
+def connect_ssh(ticket):
+    logger.info("## Establishing SSH connection ##")
+    client = paramiko.SSHClient()
+    #client.get_host_keys().add(upload_host,'ssh-rsa', key)
+    client.load_system_host_keys()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        client.connect(ticket['Publishing.Media.Host'], username=ticket['Publishing.Media.User'], password="notused")
+    except paramiko.SSHException:
+        logger.error("SSH negotiation failed")
+        logger.error(sys.exc_value)
+        sys.exit(1)
+    except paramiko.AuthenticationException:
+        logger.error("Authentication failed. Please check credentials")
+        logger.error (sys.exc_value)
+        sys.exit(1)
+    except paramiko.BadHostKeyException:
+        logger.error ("Bad host key. Check your known_hosts file")
+        logger.error (sys.exc_value)
+        sys.exit(1)
+    except paramiko.PasswordRequiredException:
+        logger.error("Password required. No ssh key in the agent?")
+        logger.error (sys.exc_value)
+        sys.exit(1)
+    except:
+        logger.error("Could not open ssh connection")
+        logger.error (sys.exc_value)
+        sys.exit(1)
+        
+    global ssh 
+    ssh = client
+    global sftp
+    sftp = paramiko.SFTPClient.from_transport(client.get_transport())
+    logger.info("SSH connection established")
+    
+#== push the thumbs to the upload host
+def upload_thumbs(ticket):
+    logger.info("## uploading thumbs ##")
+    
+    # check if ssh connection is open
+    if ssh == None or sftp == None:
+        connect_ssh()
+    thumbs_ext = {".jpg","_preview.jpg"}
+    for ext in thumbs_ext:
+        try:
+            sftp.put(str(ticket['Publishing.Path']) + "/thumbs/" + ticket['local_filename_base'] + ext, ticket['Publishing.Media.Thumbpath'])
+        except paramiko.SSHException:
+            logger.error("could not upload thumb because of SSH problem")
+            logger.error(sys.exc_value)
+            sys.exit(1)
+        except IOError:
+            logger.error("could not create file in upload directory")
+            logger.error(sys.exc_value)
+            sys.exit(1)
+            
+    print ("uploading thumbs done")
+
+#== uploads a file from path relative to the output dir to the same path relative to the upload_dir
+def upload_file(ticket, filename):
+    logger.info("## uploading "+ path + filename + " ##")
+    
+    # check if ssh connection is open
+    if (ssh == None or sftp == None):
+        connect_ssh()
+    
+    try:
+        sftp.put(str(ticket['Publishing.Path']) + filename, ticket['Publishing.Media.Path'] )
+    except paramiko.SSHException:
+        logger.error("could not upload thumb because of SSH problem")
+        logger.error(sys.exc_value)
+        sys.exit(1)
+    except IOError:
+        logger.error("could not create file in upload directory")
+        logger.error(sys.exc_value)
+        sys.exit(1)
+            
+    logger.info("uploading " + filename + " done")
+
+
 #== generate thumbnails for media.ccc.de
 def make_thumbs(video_base, local_filename, output):    
     logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
