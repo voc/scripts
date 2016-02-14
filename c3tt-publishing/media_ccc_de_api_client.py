@@ -217,8 +217,7 @@ def get_file_details(local_filename, video_base, ret):
     length = int(r.decode())
     
     try:
-        global r
-        r = subprocess.check_output("ffmpeg -i desinformation\ mp4\ gut.mp4 2>&1 | grep Stream | grep -oP ', \K[0-9]+x[0-9]+''")
+        r = subprocess.check_output("ffmpeg -i + video_base + local_filename +' 2>&1 | grep Stream | grep -oP ', \K[0-9]+x[0-9]+''")
     except:
         raise RuntimeError("ERROR: could not get duration " + exc_value)
         return False
