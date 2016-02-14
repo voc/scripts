@@ -89,7 +89,7 @@ def upload_thumbs(ticket):
 
 #== uploads a file from path relative to the output dir to the same path relative to the upload_dir
 def upload_file(ticket, filename):
-    logger.info("## uploading "+ path + filename + " ##")
+    logger.info("## uploading "+ ticket['Publishing.Path'] + filename + " ##")
     
     # check if ssh connection is open
     if (ssh == None or sftp == None):
@@ -246,6 +246,9 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     ret = []
     if not get_file_details(local_filename, video_base, ret):
         return False
+    
+    #upload the file to release
+    upload_file(ticket, filename);
     
     # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/recordings_controller.rb and DONT EVEN BLINK!!!
     url = api_url + 'recordings'
