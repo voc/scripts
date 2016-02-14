@@ -30,7 +30,7 @@ logger = logging.getLogger()
 
 # SCP functions
 #== connect to the upload host 
-def connect_ssh(ticket):
+def connect_ssh(ticket,ssh):
     logger.info("## Establishing SSH connection ##")
     client = paramiko.SSHClient()
     #client.get_host_keys().add(upload_host,'ssh-rsa', key)
@@ -59,7 +59,6 @@ def connect_ssh(ticket):
         logger.error (sys.exc_value)
         sys.exit(1)
         
-    global ssh 
     ssh = client
     global sftp
     sftp = paramiko.SFTPClient.from_transport(client.get_transport())
@@ -88,7 +87,7 @@ def upload_thumbs(ticket):
     print ("uploading thumbs done")
 
 #== uploads a file from path relative to the output dir to the same path relative to the upload_dir
-def upload_file(ticket, filename):
+def upload_file(ticket, filename, ssh):
     logger.info("## uploading "+ ticket['Publishing.Path'] + filename + " ##")
     
     # check if ssh connection is open
