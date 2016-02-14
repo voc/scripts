@@ -283,7 +283,7 @@ def mediaFromTracker():
     if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":
         #generate the thumbnails (will not overwrite existing thumbs)
         if not os.path.isfile(str(ticket['Publishing.Path']) + "/thumbs/" + str(local_filename_base) + ".jpg"):
-            if not make_thumbs(str(ticket['Publishing.Path']), ticket['local_filename'], str(ticket['Publishing.Path'])) + "/thumbs":
+            if not make_thumbs(str(ticket['Publishing.Path']), str(ticket['local_filename']), str(ticket['Publishing.Path']) + "/thumbs"):
                 return False
         else:
             logger.info("thumbs exist. skipping")

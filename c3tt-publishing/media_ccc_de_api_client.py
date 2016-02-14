@@ -25,7 +25,7 @@ import os
 import time
 import logging
 #from _hotshot import resolution
-from string import split
+#from string import split
 logger = logging.getLogger()
 
 # SCP functions
@@ -127,7 +127,7 @@ def make_thumbs(video_base, local_filename, output):
     return True
     
 #=== make a new event on media
-def make_event(ticket, api_url, api_key,description, tags, orig_language):
+def make_event(ticket, api_url, api_key, orig_language):
     logger.info(("## generating new event on " + api_url + " ##"))
     
     #prepare some variables for the api call
@@ -155,20 +155,20 @@ def make_event(ticket, api_url, api_key,description, tags, orig_language):
     payload = {'api_key' : api_key,
                'guid' : str(ticket['Fahrplan.GUID']),
                'event' : {
-                          'slug' : str(ticket['Fahrplan.Slug']),
+                          'slug' : str(ticket['Publishing.Media.Slug']),
                           'title' : str(ticket['Fahrplan.Title']),
                           'subtitle' : str(ticket['Fahrplan.Subtitle']),
                           'link' : "https://c3voc.de",
                           'original_language': orig_language,
                           'thumb_filename' : str(local_filename_base) + ".jpg",
                           'poster_filename' : str(local_filename_base) + "_preview.jpg",
-                          'conference_id' : str(ticket['Farhplan.Slug']),
+                          'conference_id' : str(ticket['Publishing.Media.Slug']),
                           'description' : str(ticket['Fahrplan.Abstract']),
                           'date' : str(ticket['Fahrplan.Date']),
                           'persons': people,
                           'tags': tags,
                           'promoted' : False,
-                          'release_date' : str(time.strftime("%H:%M:%S"))
+                          'release_date' : str(time.strftime("%Y-%m-%d"))
                         }
     }     
     logger.debug(payload)
