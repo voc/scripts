@@ -24,7 +24,7 @@ import sys
 import os
 import time
 import logging
-from _hotshot import resolution
+#from _hotshot import resolution
 from string import split
 logger = logging.getLogger()
 
