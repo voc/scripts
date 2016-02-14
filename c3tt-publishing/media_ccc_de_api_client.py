@@ -153,8 +153,9 @@ def make_event(ticket, api_url, api_key, orig_language):
     # DONT EVEN BLINK !!!!    
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
-               'guid' : str(ticket['Fahrplan.GUID']),
+	       'acronym' : str(ticket['Project.Slug']),
                'event' : {
+      	                  'guid' : str(ticket['Fahrplan.GUID']),
                           'slug' : str(ticket['Publishing.Media.Slug']),
                           'title' : str(ticket['Fahrplan.Title']),
                           'subtitle' : str(ticket['Fahrplan.Subtitle']),
@@ -217,14 +218,14 @@ def get_file_details(local_filename, video_base, ret):
     length = int(r.decode())
     
     try:
-        r = subprocess.check_output("ffmpeg -i + video_base + local_filename +' 2>&1 | grep Stream | grep -oP ', \K[0-9]+x[0-9]+''")
+        r = subprocess.check_output('ffmpeg -i ' + video_base + local_filename + ' 2>&1 | grep Stream | grep -oP ", \K[0-9]+x[0-9]+"',shell=True)
     except:
-        raise RuntimeError("ERROR: could not get duration " + exc_value)
+        raise RuntimeError("ERROR: could not get duration ")
         return False
     resolution = r.decode()
-    resolution = split(resolution, 'x')
+    resolution = resolution.partition('x')
     width = resolution[0]
-    height = resolution[1]
+    height = resolution[2]
     
     if length == 0:
         raise RuntimeError("Error: file length is 0")
@@ -234,11 +235,11 @@ def get_file_details(local_filename, video_base, ret):
         ret.append(filesize)
         ret.append(length)
         ret.append(width)
-        rest.append(height)
+        ret.append(height)
         return True
 
 #=== publish a file on media
-def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5):
+def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5, ticket):
     logger.info(("## publishing "+ filename + " to " + api_url + " ##"))
     
     # make sure we have the file size and length
@@ -251,6 +252,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
     headers = {'CONTENT-TYPE' : 'application/json'}
     payload = {'api_key' : api_key,
                'guid' : guid,
+	       'acronym' : ticket['Project.Slug'],
                'recording' : {'folder' : folder,
                               'filename' : filename,
                               'mime_type' : mime_type,
