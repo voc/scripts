@@ -343,7 +343,7 @@ def mediaFromTracker():
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         try:
-            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vide/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True,ticket)
+            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vide/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True,ticket,ssh)
         except RuntimeError as err:
             
             #The error string sometime break the signature setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
@@ -352,7 +352,7 @@ def mediaFromTracker():
             sys.exit(-1) 
   
         try:
-            publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[1]), True, True,ticket)
+            publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[1]), True, True,ticket,ssh)
         except RuntimeError as err:
             setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
@@ -376,7 +376,7 @@ def mediaFromTracker():
         html5 = True
     
     try:
-        publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5,ticket)
+        publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5,ticket,ssh)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))

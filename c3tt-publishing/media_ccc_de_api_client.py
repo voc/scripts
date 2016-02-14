@@ -24,6 +24,7 @@ import sys
 import os
 import time
 import logging
+import paramiko
 #from _hotshot import resolution
 #from string import split
 logger = logging.getLogger()
@@ -65,12 +66,12 @@ def connect_ssh(ticket,ssh):
     logger.info("SSH connection established")
     
 #== push the thumbs to the upload host
-def upload_thumbs(ticket):
+def upload_thumbs(ticket,ssh):
     logger.info("## uploading thumbs ##")
     
     # check if ssh connection is open
     if ssh == None or sftp == None:
-        connect_ssh()
+        connect_ssh(ticket,ssh)
     thumbs_ext = {".jpg","_preview.jpg"}
     for ext in thumbs_ext:
         try:
@@ -87,15 +88,15 @@ def upload_thumbs(ticket):
     print ("uploading thumbs done")
 
 #== uploads a file from path relative to the output dir to the same path relative to the upload_dir
-def upload_file(ticket, filename, ssh):
+def upload_file(ticket, local_filename, filename, ssh):
     logger.info("## uploading "+ ticket['Publishing.Path'] + filename + " ##")
     
     # check if ssh connection is open
     if (ssh == None or sftp == None):
-        connect_ssh()
+        connect_ssh(ticket,ssh)
     
     try:
-        sftp.put(str(ticket['Publishing.Path']) + filename, ticket['Publishing.Media.Path'] )
+        sftp.put(str(ticket['Publishing.Path']) + local_filename, ticket['Publishing.Media.Path'] + filename )
     except paramiko.SSHException:
         logger.error("could not upload thumb because of SSH problem")
         logger.error(sys.exc_value)
@@ -238,7 +239,7 @@ def get_file_details(local_filename, video_base, ret):
         return True
 
 #=== publish a file on media
-def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5, ticket):
+def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5, ticket,ssh):
     logger.info(("## publishing "+ filename + " to " + api_url + " ##"))
     
     # make sure we have the file size and length
@@ -247,7 +248,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
         return False
     
     #upload the file to release
-    upload_file(ticket, filename);
+    upload_file(ticket, local_filename, filename, ssh);
     
     # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/recordings_controller.rb and DONT EVEN BLINK!!!
     url = api_url + 'recordings'
