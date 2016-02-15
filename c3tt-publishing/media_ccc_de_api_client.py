@@ -88,7 +88,7 @@ def upload_thumbs(ticket,ssh):
     print ("uploading thumbs done")
 
 #== uploads a file from path relative to the output dir to the same path relative to the upload_dir
-def upload_file(ticket, local_filename, filename, ssh):
+def upload_file(ticket, local_filename, filename, folder, ssh):
     logger.info("## uploading "+ ticket['Publishing.Path'] + filename + " ##")
     
     # check if ssh connection is open
@@ -96,9 +96,9 @@ def upload_file(ticket, local_filename, filename, ssh):
         connect_ssh(ticket,ssh)
     
     try:
-        sftp.put(str(ticket['Publishing.Path']) + local_filename, ticket['Publishing.Media.Path'] + filename )
+        sftp.put(str(ticket['Publishing.Path']) + local_filename, ticket['Publishing.Media.Path'] + folder +  filename )
     except paramiko.SSHException:
-        logger.error("could not upload thumb because of SSH problem")
+        logger.error("could not upload recording because of SSH problem")
         logger.error(sys.exc_value)
         sys.exit(1)
     except IOError:
@@ -248,7 +248,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
         return False
     
     #upload the file to release
-    upload_file(ticket, local_filename, filename, ssh);
+    upload_file(ticket, local_filename, filename, folder, ssh);
     
     # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/recordings_controller.rb and DONT EVEN BLINK!!!
     url = api_url + 'recordings'

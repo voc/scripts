@@ -343,7 +343,7 @@ def mediaFromTracker():
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         try:
-            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'vide/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True,ticket,ssh)
+            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True,ticket,ssh)
         except RuntimeError as err:
             
             #The error string sometime break the signature setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
