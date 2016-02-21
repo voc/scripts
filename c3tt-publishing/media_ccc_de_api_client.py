@@ -172,23 +172,8 @@ def create_event(ticket, api_url, api_key, orig_language):
         r = requests.post(url, headers=headers, data=json.dumps(payload), verify=False)
     except requests.packages.urllib3.exceptions.MaxRetryError as err:
         raise RuntimeError("Error during creating of event: " + str(err))
-        return False
-#     except:
-#         logger.error("Unhandelt ssl / retry problem")
-#         return False
-    
-    if r.status_code == 200 or r.status_code == 201:
-        logger.debug(r.text)
-        logger.info("new event created")
-        return True
-    else:
-        if r.status_code == 422:
-            logger.info("event already exists. => publishing")
-            return True
-        else:
-            raise RuntimeError(("ERROR: Could not add event: " + str(r.status_code) + " " + r.text))
-            return False
 
+    return r
 #=== get filesize and length of the media file
 def get_file_details(ticket, local_filename, video_base, ret):
     if local_filename == None:

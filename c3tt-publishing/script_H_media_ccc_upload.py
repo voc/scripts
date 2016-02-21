@@ -273,16 +273,6 @@ def mediaFromTracker():
     
     #if we have an audio file we skip this part 
     if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":
-        #generate the thumbnails (will not overwrite existing thumbs)
-        if not os.path.isfile(str(ticket['Publishing.Path']) + str(local_filename_base) + ".jpg"):
-            if not make_thumbs(ticket):
-                return False
-        else:
-            logger.info("thumbs exist. skipping")
-        
-        #upload thumbnails
-        #for now we just overwrite
-        upload_thumbs(ticket, sftp)
          
         #get original language. We assume this is always the first language
         langs = language.rsplit('-')
@@ -291,11 +281,30 @@ def mediaFromTracker():
         #create the event
         #TODO at the moment we just try this and look on the error. We should store event id and ask the api
         try:
-            create_event(ticket, api_url, api_key, orig_language)
+            r = create_event(ticket, api_url, api_key, orig_language)
+            if r.status_code in [200, 201]:
+                logger.info("new event created")
+                #generate the thumbnails (will not overwrite existing thumbs)
+                if not os.path.isfile(str(ticket['Publishing.Path']) + str(local_filename_base) + ".jpg"):
+                    if not make_thumbs(ticket):
+                        raise RuntimeError("ERROR: Generating thumbs:")
+                    else:
+                        #upload thumbnails
+                        upload_thumbs(ticket, sftp)
+                else:
+                    logger.info("thumbs exist. skipping")
+                
+            elif r.status_code == 422:
+                logger.info("event already exists. => publishing")
+            else:
+                raise RuntimeError(("ERROR: Could not add event: " + str(r.status_code) + " " + r.text))
+
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
+            
+
     else: 
         #get the language of the encoding. We handle here multi lang releases
         if not 'Encoding.LanguageIndex' in ticket:
