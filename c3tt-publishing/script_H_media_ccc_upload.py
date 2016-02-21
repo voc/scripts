@@ -101,7 +101,7 @@ if True:
     # upload_pw = config['media.ccc.de']['upload_pw'] #it is recommended to use key login. PW musts be set but can be random
     # upload_path = config['media.ccc.de']['upload_path']
 
-#if we dont use the tracker we need to get the informations from the config
+#if we don't use the tracker we need to get the informations from the config file
 if source != 'c3tt':
     #################### conference information ######################
     rec_path = config['conference']['rec_path']
@@ -113,11 +113,6 @@ if source != 'c3tt':
     video_base = config['env']['video_base']
     # base dir for video output files (local)
     output = config['env']['output']
-
-#path to the thumb export.
-#this is also used as postfix for the publishing dir
-thumb_path = config['env']['thumb_path']
-
 
 #internal vars
 ticket = None
@@ -132,7 +127,6 @@ guid = None
 filename = None
 debug = 0
 slug = None
-slug_c = None #slug without :
 rpc_client = None
 title = None
 subtitle = None 
@@ -197,12 +191,8 @@ def iCanHazTicket():
         
         #TODO add here some try magic to catch missing properties
 
-        #if 'Fahrplan.Slug' in ticket:
         slug = ticket['Fahrplan.Slug']	
-        #else:
-        #        slug = str(ticket['Encoding.Basename'])
 
-        slug_c = slug.replace(":","_")    
         guid = ticket['Fahrplan.GUID']
         acronym = ticket['Project.Slug']
         filename = str(ticket['EncodingProfile.Basename']) + "." + str(ticket['EncodingProfile.Extension'])
@@ -221,7 +211,7 @@ def iCanHazTicket():
         local_filename_base =  str(ticket['Fahrplan.ID']) + "-" + ticket['EncodingProfile.Slug']
         ticket['local_filename_base'] = local_filename_base
         video_base = str(ticket['Publishing.Path'])
-        output = str(ticket['Publishing.Path']) + "/"+ str(thumb_path)
+        output = str(ticket['Publishing.Path'])
         download_base_url =  str(ticket['Publishing.Base.Url'])
         profile_extension = ticket['EncodingProfile.Extension']
         profile_slug = ticket['EncodingProfile.Slug']
@@ -254,7 +244,7 @@ def iCanHazTicket():
         #if 'Fahrplan.Abstract' in ticket:
         #        description = ticket['Fahrplan.Abstract']
       
-        logging.debug("Data for media: guid: " + guid + " slug: " + slug_c + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + ' people: ' + ", ".join(people) + ' tags: ' + ", ".join(tags) + ' language: ' + language)
+        logging.debug("Data for media: guid: " + guid + " slug: " + slug + " acronym: " + acronym  + " filename: "+ filename + " title: " + title + " local_filename: " + local_filename + ' video_base: ' + video_base + ' output: ' + output + ' people: ' + ", ".join(people) + ' tags: ' + ", ".join(tags) + ' language: ' + language)
         
         if not os.path.isfile(video_base + local_filename):
             logging.error("Source file does not exist (%s)" % (video_base + local_filename))
@@ -281,7 +271,7 @@ def mediaFromTracker():
     mutlilang = False
     #** create a event on media
     
-    #If we have an audio file we skip this part 
+    #if we have an audio file we skip this part 
     if profile_slug != "mp3" and profile_slug != "opus" and profile_slug != "mp3-2" and profile_slug != "opus-2":
         #generate the thumbnails (will not overwrite existing thumbs)
         if not os.path.isfile(str(ticket['Publishing.Path']) + str(local_filename_base) + ".jpg"):
@@ -290,6 +280,10 @@ def mediaFromTracker():
         else:
             logger.info("thumbs exist. skipping")
         
+        #upload thumbnails
+        #for now we just overwrite
+        upload_thumbs(ticket, sftp)
+         
         #get original language. We assume this is always the first language
         langs = language.rsplit('-')
         orig_language = str(langs[0]) 
@@ -297,12 +291,12 @@ def mediaFromTracker():
         #create the event
         #TODO at the moment we just try this and look on the error. We should store event id and ask the api
         try:
-            make_event(ticket, api_url, api_key, orig_language)
+            create_event(ticket, api_url, api_key, orig_language)
         except RuntimeError as err:
             logging.error("Creating event failed")
             setTicketFailed(ticket_id, "Creating event failed, in case of audio releases make sure event exists: \n" + str(err), url, group, host, secret)
             sys.exit(-1)
-    else:
+    else: 
         #get the language of the encoding. We handle here multi lang releases
         if not 'Encoding.LanguageIndex' in ticket:
             logging.error("Encoding.LanguageIndex")
@@ -345,16 +339,17 @@ def mediaFromTracker():
             raise RuntimeError('error remuxing '+infile+' to '+outfile2)
 
         try:
-            publish(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True,ticket,ssh)
+            upload_file(ticket, local_filename, filename, folder, sftp);
+            create_recording(outfilename1, filename1, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[0]), True, True,ticket)
         except RuntimeError as err:
             
             #The error string sometime break the signature setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             setTicketFailed(ticket_id, "Publishing failed: runtime error \n", url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
             sys.exit(-1) 
-  
         try:
-            publish(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[1]), True, True,ticket,ssh)
+            upload_file(ticket, local_filename, filename, folder, sftp);
+            create_recording(outfilename2, filename2, api_url, download_base_url, api_key, guid, 'video/mp4', 'h264-hd-web', video_base, str(langs[1]), True, True,ticket)
         except RuntimeError as err:
             setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
             logging.error("Publishing failed: \n" + str(err))
@@ -378,7 +373,8 @@ def mediaFromTracker():
         html5 = True
     
     try:
-        publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5,ticket,ssh)
+        upload_file(ticket, local_filename, filename, folder, ssh);
+        create_recording(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5,ticket)
     except RuntimeError as err:
         setTicketFailed(ticket_id, "Publishing failed: \n" + str(err), url, group, host, secret)
         logging.error("Publishing failed: \n" + str(err))
@@ -404,7 +400,7 @@ def youtubeFromTracker():
 
 iCanHazTicket()
 choose_target_from_properties()
-send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
+#send_tweet(ticket, token, token_secret, consumer_key, consumer_secret)
 logging.info("set ticket done")
 setTicketDone(ticket_id, url, group, host, secret)
 

@@ -31,7 +31,7 @@ logger = logging.getLogger()
 
 # SCP functions
 #== connect to the upload host 
-def connect_ssh(ticket,ssh):
+def connect_ssh(ticket):
     logger.info("## Establishing SSH connection ##")
     client = paramiko.SSHClient()
     #client.get_host_keys().add(upload_host,'ssh-rsa', key)
@@ -41,69 +41,60 @@ def connect_ssh(ticket,ssh):
         client.connect(ticket['Publishing.Media.Host'], username=ticket['Publishing.Media.User'], password="notused")
     except paramiko.SSHException:
         logger.error("SSH negotiation failed")
-        logger.error(sys.exc_value)
         sys.exit(1)
     except paramiko.AuthenticationException:
         logger.error("Authentication failed. Please check credentials")
-        logger.error (sys.exc_value)
         sys.exit(1)
     except paramiko.BadHostKeyException:
         logger.error ("Bad host key. Check your known_hosts file")
-        logger.error (sys.exc_value)
         sys.exit(1)
     except paramiko.PasswordRequiredException:
         logger.error("Password required. No ssh key in the agent?")
-        logger.error (sys.exc_value)
         sys.exit(1)
     except:
         logger.error("Could not open ssh connection")
-        logger.error (sys.exc_value)
         sys.exit(1)
         
-    ssh = client
-    global sftp
-    sftp = paramiko.SFTPClient.from_transport(client.get_transport())
     logger.info("SSH connection established")
-    
+    return paramiko.SFTPClient.from_transport(client.get_transport())
+
 #== push the thumbs to the upload host
-def upload_thumbs(ticket,ssh):
+def upload_thumbs(ticket,sftp):
     logger.info("## uploading thumbs ##")
     
     # check if ssh connection is open
-    if ssh == None or sftp == None:
-        connect_ssh(ticket,ssh)
+    if sftp is None:
+        sftp = connect_ssh(ticket)
     thumbs_ext = {".jpg","_preview.jpg"}
     for ext in thumbs_ext:
         try:
-            sftp.put(str(ticket['Publishing.Path']) + ticket['local_filename_base'] + ext, ticket['Publishing.Media.Thumbpath'])
+            logger.debug("Uploading " + ticket['Publishing.Path'] + ticket['local_filename_base'] + ext + " to " + ticket['Publishing.Media.Thumbpath'] + str(ticket['local_filename_base']) + ext)
+            sftp.put(str(ticket['Publishing.Path']) + str(ticket['local_filename_base']) + ext, str(ticket['Publishing.Media.Thumbpath']) + str(ticket['local_filename_base']) + ext)
         except paramiko.SSHException:
             logger.error("could not upload thumb because of SSH problem")
-            logger.error(sys.exc_value)
             sys.exit(1)
-        except IOError:
+        except IOError as err:
             logger.error("could not create file in upload directory")
-            logger.error(sys.exc_value)
+            logger.error(err)
             sys.exit(1)
             
     print ("uploading thumbs done")
 
 #== uploads a file from path relative to the output dir to the same path relative to the upload_dir
-def upload_file(ticket, local_filename, filename, folder, ssh):
+def upload_file(ticket, local_filename, filename, folder, sftp):
     logger.info("## uploading "+ ticket['Publishing.Path'] + filename + " ##")
     
     # check if ssh connection is open
-    if (ssh == None or sftp == None):
-        connect_ssh(ticket,ssh)
-    
+    if sftp is None:
+        sftp = connect_ssh(ticket)
+  
     try:
-        sftp.put(str(ticket['Publishing.Path']) + local_filename, ticket['Publishing.Media.Path'] + folder +  filename )
+        sftp.put(str(ticket['Publishing.Path']) + local_filename, ticket['Publishing.Media.Path'] + folder + "/" +  filename )
     except paramiko.SSHException:
         logger.error("could not upload recording because of SSH problem")
-        logger.error(sys.exc_value)
         sys.exit(1)
     except IOError:
         logger.error("could not create file in upload directory")
-        logger.error(sys.exc_value)
         sys.exit(1)
             
     logger.info("uploading " + filename + " done")
@@ -111,9 +102,10 @@ def upload_file(ticket, local_filename, filename, folder, ssh):
 
 #== generate thumbnails for media.ccc.de
 def make_thumbs(ticket):    
-    logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
+    logger.info(("## generating thumbs for "  + str(ticket['Publishing.Path'])  + str(ticket['local_filename']) + " ##"))
 
     try:
+        #todo this doesnt have to be a subprocess, build thumbs in python
         subprocess.check_call(["postprocessing/generate_thumb_autoselect_compatible.sh", str(ticket['Publishing.Path']) + str(ticket['local_filename']), str(ticket['Publishing.Path'])])
     except subprocess.CalledProcessError as err:
         logger.error("A fault occurred")
@@ -123,11 +115,11 @@ def make_thumbs(ticket):
         raise RuntimeError(err.cmd)
         return False
          
-    logger.info("thumbs created")
+    logger.info("thumbnails created")
     return True
     
 #=== make a new event on media
-def make_event(ticket, api_url, api_key, orig_language):
+def create_event(ticket, api_url, api_key, orig_language):
     logger.info(("## generating new event on " + api_url + " ##"))
     
     #prepare some variables for the api call
@@ -198,7 +190,7 @@ def make_event(ticket, api_url, api_key, orig_language):
             return False
 
 #=== get filesize and length of the media file
-def get_file_details(local_filename, video_base, ret):
+def get_file_details(ticket, local_filename, video_base, ret):
     if local_filename == None:
         raise RuntimeError("Error: No filename supplied.")
         return False
@@ -217,15 +209,19 @@ def get_file_details(local_filename, video_base, ret):
     global length
     length = int(r.decode())
     
-    try:
-        r = subprocess.check_output('ffmpeg -i ' + video_base + local_filename + ' 2>&1 | grep Stream | grep -oP ", \K[0-9]+x[0-9]+"',shell=True)
-    except:
-        raise RuntimeError("ERROR: could not get duration ")
-        return False
-    resolution = r.decode()
-    resolution = resolution.partition('x')
-    width = resolution[0]
-    height = resolution[2]
+    if ticket['EncodingProfile.Slug'] not in ["mp3", "opus", "mp3-2", "opus-2"]:    
+        try:
+            r = subprocess.check_output('ffmpeg -i ' + video_base + local_filename + ' 2>&1 | grep Stream | grep -oP ", \K[0-9]+x[0-9]+"',shell=True)
+        except:
+            raise RuntimeError("ERROR: could not get duration ")
+            return False
+        resolution = r.decode()
+        resolution = resolution.partition('x')
+        width = resolution[0]
+        height = resolution[2]
+    else: #we have an audio only release so we set a 0 resolution
+         width = 0
+         height = 0
     
     if length == 0:
         raise RuntimeError("Error: file length is 0")
@@ -238,18 +234,15 @@ def get_file_details(local_filename, video_base, ret):
         ret.append(height)
         return True
 
-#=== publish a file on media
-def publish(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5, ticket,ssh):
+#=== create_recording a file on media
+def create_recording(local_filename, filename, api_url, download_base_url, api_key, guid, mime_type, folder, video_base, language, hq, html5, ticket):
     logger.info(("## publishing "+ filename + " to " + api_url + " ##"))
     
     # make sure we have the file size and length
     ret = []
-    if not get_file_details(local_filename, video_base, ret):
+    if not get_file_details(ticket, local_filename, video_base, ret):
         return False
-    
-    #upload the file to release
-    upload_file(ticket, local_filename, filename, folder, ssh);
-    
+        
     # have a look at https://github.com/voc/media.ccc.de/blob/master/app/controllers/api/recordings_controller.rb and DONT EVEN BLINK!!!
     url = api_url + 'recordings'
     headers = {'CONTENT-TYPE' : 'application/json'}
@@ -282,7 +275,7 @@ def publish(local_filename, filename, api_url, download_base_url, api_key, guid,
         return False
     
     if r.status_code != 200 and r.status_code != 201:
-        raise RuntimeError(("ERROR: Could not publish talk: " + str(r.status_code) + " " + r.text))
+        raise RuntimeError(("ERROR: Could not create_recording talk: " + str(r.status_code) + " " + r.text))
         return False
     
     logger.info(("publishing " + filename + " done"))
