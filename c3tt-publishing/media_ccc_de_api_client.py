@@ -75,7 +75,7 @@ def upload_thumbs(ticket,ssh):
     thumbs_ext = {".jpg","_preview.jpg"}
     for ext in thumbs_ext:
         try:
-            sftp.put(str(ticket['Publishing.Path']) + "/thumbs/" + ticket['local_filename_base'] + ext, ticket['Publishing.Media.Thumbpath'])
+            sftp.put(str(ticket['Publishing.Path']) + ticket['local_filename_base'] + ext, ticket['Publishing.Media.Thumbpath'])
         except paramiko.SSHException:
             logger.error("could not upload thumb because of SSH problem")
             logger.error(sys.exc_value)
@@ -110,11 +110,11 @@ def upload_file(ticket, local_filename, filename, folder, ssh):
 
 
 #== generate thumbnails for media.ccc.de
-def make_thumbs(video_base, local_filename, output):    
+def make_thumbs(ticket):    
     logger.info(("## generating thumbs for "  + video_base + local_filename + " ##"))
 
     try:
-        subprocess.check_call(["postprocessing/generate_thumb_autoselect_compatible.sh", video_base + local_filename, output])
+        subprocess.check_call(["postprocessing/generate_thumb_autoselect_compatible.sh", str(ticket['Publishing.Path']) + str(ticket['local_filename']), str(ticket['Publishing.Path'])])
     except subprocess.CalledProcessError as err:
         logger.error("A fault occurred")
         logger.error("Fault code: %d" % err.returncode)
