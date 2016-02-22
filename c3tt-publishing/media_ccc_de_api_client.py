@@ -25,12 +25,11 @@ import os
 import time
 import logging
 import paramiko
-#from _hotshot import resolution
-#from string import split
+import errno
 logger = logging.getLogger()
 
-# SCP functions
-#== connect to the upload host 
+# SCP functions  
+# Connect to the upload host.  
 def connect_ssh(ticket):
     logger.info("## Establishing SSH connection ##")
     client = paramiko.SSHClient()
@@ -56,7 +55,9 @@ def connect_ssh(ticket):
         sys.exit(1)
         
     logger.info("SSH connection established")
-    return paramiko.SFTPClient.from_transport(client.get_transport())
+    sftp_client = paramiko.SFTPClient.from_transport(client.get_transport())
+    sftp_client.keep_ssh = client #this prevents the garbage collector from stealing our client instance
+    return sftp_client
 
 #== push the thumbs to the upload host
 def upload_thumbs(ticket,sftp):
@@ -70,8 +71,9 @@ def upload_thumbs(ticket,sftp):
         try:
             logger.debug("Uploading " + ticket['Publishing.Path'] + ticket['local_filename_base'] + ext + " to " + ticket['Publishing.Media.Thumbpath'] + str(ticket['local_filename_base']) + ext)
             sftp.put(str(ticket['Publishing.Path']) + str(ticket['local_filename_base']) + ext, str(ticket['Publishing.Media.Thumbpath']) + str(ticket['local_filename_base']) + ext)
-        except paramiko.SSHException:
+        except paramiko.SSHException as err:
             logger.error("could not upload thumb because of SSH problem")
+            logger.error(err)
             sys.exit(1)
         except IOError as err:
             logger.error("could not create file in upload directory")
@@ -84,18 +86,41 @@ def upload_thumbs(ticket,sftp):
 def upload_file(ticket, local_filename, filename, folder, sftp):
     logger.info("## uploading "+ ticket['Publishing.Path'] + filename + " ##")
     
-    # check if ssh connection is open
+    # Check if ssh connection is open.
     if sftp is None:
         sftp = connect_ssh(ticket)
   
+    # Check if the directory exists and if not create it.
+    # This only works for the format subdiers not for the event itself
+    try:
+        sftp.stat(ticket['Publishing.Media.Path'] + folder)
+    except IOError as e:
+        if e.errno == errno.ENOENT:
+            try:
+                sftp.mkdir(ticket['Publishing.Media.Path'] + folder)
+            except IOError as e:
+                logger.error(e)
+    
+    # Check if the file already exists and remove it
+    try: 
+        sftp.stat(ticket['Publishing.Media.Path'] + folder + "/" + filename)
+    except IOError:
+        pass #if the file not exists we can can go to the upload
+    else:   
+        try:
+            sftp.remove(ticket['Publishing.Media.Path'] + folder + "/" +  filename )
+        except IOError as e:
+            logger.error(e)
+            
+    # Upload the file
     try:
         sftp.put(str(ticket['Publishing.Path']) + local_filename, ticket['Publishing.Media.Path'] + folder + "/" +  filename )
-    except paramiko.SSHException:
+    except paramiko.SSHException as err:
         logger.error("could not upload recording because of SSH problem")
-        sys.exit(1)
-    except IOError:
+        logger.error(err)
+    except IOError as err:
         logger.error("could not create file in upload directory")
-        sys.exit(1)
+        logger.error(err)
             
     logger.info("uploading " + filename + " done")
 
