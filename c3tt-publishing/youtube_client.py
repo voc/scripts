@@ -92,7 +92,7 @@ def uploadVideo(ticket, accessToken, channelId):
     if 'Publishing.Media.Url' in ticket and 'Fahrplan.Slug' in ticket:
         description = os.path.join(ticket['Publishing.Media.Url'], ticket['Fahrplan.Slug']+'.html') + '\n\n' + description
 
-    if ticket['Publishing.YouTube.TitlePrefix'] in ticket:
+    if 'Publishing.YouTube.TitlePrefix' in ticket:
         tmp_titel = str(ticket['Publishing.YouTube.TitlePrefix']) + ' ' + str(ticket['Fahrplan.Title'])
         logger.debug('adding ' + str(ticket['Publishing.YouTube.TitlePrefix']) + ' as title prefix')
     else:
