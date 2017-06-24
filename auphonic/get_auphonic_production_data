@@ -1,0 +1,2 @@
+#!/bin/bash
+curl https://auphonic.com/api/productions.json?limit=1000 -u $(cat .auphonic-login) > productions.json
