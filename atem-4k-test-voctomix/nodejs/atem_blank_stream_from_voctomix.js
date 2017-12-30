@@ -24,13 +24,12 @@ THE SOFTWARE.
 ***************************************************************************/
 
 /******************************SETTINGS************************************
+**************************please set them here*****************************/
 const settings = {
-    EncoderIP: "10.73.4.3"      //--> INPUT  <-- the VocToMix-Encoder ip address which should cause the BlackMagic ATEM to blank
-    EncoderControlPort: "9999"  //--> INPUT  <-- the VocToMix-Encoder control port, where we receive the message when stream was blanked
-    AtemIP: "10.73.4.30"        //--> OUTPUT <-- the BlackMagic ATEM ip address which is used by the node.js-api to send commands
+    EncoderIP: "10.73.4.3",
+    EncoderControlPort: 9999,
+    AtemIP: "10.73.4.30"
 };
-******************************SETTINGS************************************/
-
 
 var net = require('net');
 var atemcli = require('applest-atem');
@@ -40,12 +39,11 @@ var atem = new atemcli();
 atem.on('connect', function() {
 	console.log('connected to atem');
 });
-atem.connect(settings.AtemIP)
-
+atem.connect(settings.AtemIP);
 
 var connection = net.createConnection({
 	host: settings.EncoderIP,
-        port: settings.EncoderPort,
+        port: settings.EncoderControlPort,
 
 //debug with changing port on specific encoder and following commandline
 //sudo nc -v -l -p 12555
@@ -81,8 +79,8 @@ connection.on('data', function(line) {
                 //PreviewList see here: https://github.com/applest/node-applest-atem/blob/master/docs/specification.md
                 //Cam on Button 2 from left = 2
 
-		atem.changePreviewInput(2);
-		atem.changeUpstreamKeyState (0, false);
+		atem.changePreviewInput(1);
+//		atem.changeUpstreamKeyState (0, false);
 		atem.cutTransition();
 	}
 	else if(args[0] == 'blank') {
@@ -92,7 +90,7 @@ connection.on('data', function(line) {
                 //Media1 = 3010
 
 		atem.changePreviewInput(3010);
-		atem.changeUpstreamKeyState (0, true);
+//		atem.changeUpstreamKeyState (0, false);
 		atem.cutTransition();
 	}
 });
