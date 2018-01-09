@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # -*- coding: UTF-8 -*-
 # Created in 2016 by Andi <andi@muc.ccc.de>
 #
@@ -57,7 +58,7 @@ if productions['data']:
                     credits[conference] += used_credits
                 else:
                     credits[conference] = used_credits
-            except Exception as e: 
+            except Exception as e:
                 print(e)
                 print(production)
                 print("")

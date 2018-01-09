@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # -*- coding: UTF-8 -*-
 # Created in 2014 by Andi <andi@muc.ccc.de> and Mazdermind?
 
