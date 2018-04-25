@@ -62,9 +62,9 @@ end
 #
 # @example private: 4 public: 1 github: 1
 def repo_counts(repositories)
-  repo_public_states = { 'private': 'false',
-                         'public': 'http',
-                         'github': 'github' }
+  repo_public_states = { 'private' => 'false',
+                         'public' => 'http',
+                         'github' => 'github' }
 
   string = ""
   repo_public_states.keys.each do |state|
