@@ -55,6 +55,26 @@ def repositories_to_dokuwiki_table(repositories)
   table
 end
 
+# Count repos in gitoliteconfig an group by public, private, github.
+#
+# @param [Hash]
+# @return [Array]
+#
+# @example private: 4 public: 1 github: 1
+def repo_counts(repositories)
+  repo_public_states = { 'private': 'false',
+                         'public': 'http',
+                         'github': 'github' }
+
+  string = ""
+  repo_public_states.keys.each do |state|
+    string += "#{state}: #{repositories.keys.count { |k|
+      repositories[k][:public] == repo_public_states[state] }} "
+  end
+
+  string
+end
+
 def add_color(line, public_status)
   color = ''
 
@@ -167,6 +187,8 @@ def insert_into_original(content)
   content.each do |con|
     if con =~ /#{@pattern[:start].gsub('*', '\*')}/
       new_content << con
+      new_content << "" # newline
+      new_content << repo_counts(@repos)
       new_content << "" # newline
       new_content << "=== Gruppen"
       new_content << "" # newline
