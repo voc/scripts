@@ -79,7 +79,7 @@ def parse_gitolite_config
   File.read(GITOLITE_CONFIG).each_line do |line|
     case line
     # REPOSITORIES
-    when /repo/
+    when /^\s*repo/
       repos = line.split(' ') - ['repo']
       repos.each do |repo|
         @repos[repo] = { read_access: [], write_access: [], hooks: [], comment: comments_to_repo, public: 'false' }
