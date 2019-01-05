@@ -11,8 +11,8 @@ import json
 import argparse
 import requests
 
-parser = argparse.ArgumentParser(description='Fetch finished Auphonic-Productions visible for the specified login from Auphonic and parse all Youtube-Urls out, order them by talk-id and resturn a mapping-json')
-parser.add_argument('--auphonic-login', dest='auphonic',default = os.path.expandvars("./.auphonic-login"),
+parser = argparse.ArgumentParser(description='Fetch finished Auphonic-Productions visible for the specified login from Auphonic and sum up used credits by confernce acronym')
+parser.add_argument('--auphonic-login', dest='auphonic', default = os.path.expandvars("./.auphonic-login"),
     help="path of a file containing username:password of your auphonic account")
 
 args = parser.parse_args()
