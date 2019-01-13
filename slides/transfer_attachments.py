@@ -31,7 +31,7 @@ offline = args.offline # True -> Schedules nicht von frab.cccv.de herunterladen 
 
 LOGIN_HOST = "https://frab.cccv.de"
 
-conference = "34c3"
+conference = "35c3"
 
 
 LANG_MAP = {
@@ -41,7 +41,7 @@ LANG_MAP = {
 
 dry_run = False
 
-base_folder = "/cdn.media.ccc.de/congress/2017/slides-pdf/"
+base_folder = "/cdn.media.ccc.de/congress/2018/slides-pdf/"
 
 if __name__ == '__main__':
     schedule = None
@@ -49,12 +49,12 @@ if __name__ == '__main__':
         with open("data/schedule_" + conference + ".xml", "r", encoding='utf-8') as f:
             schedule = etree.parse(f)
     else:
-        r = requests.get("http://events.ccc.de/congress/2017/Fahrplan/schedule.xml")
+        r = requests.get("http://events.ccc.de/congress/2018/Fahrplan/schedule.xml")
         schedule = etree.fromstring(r.content)
 
     if not dry_run:
         sftp = pysftp.Connection('koeln.media.ccc.de', username='cdn-app', private_key='~/.ssh/id_cdn-app_media')
-        sftp.cd('cdn.media.ccc.de/congress/2017/slides-pdf/')
+        sftp.cd('cdn.media.ccc.de/congress/2018/slides-pdf/')
 
     count = 0
     count_missing = 0
