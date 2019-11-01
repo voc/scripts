@@ -23,6 +23,8 @@ WEKAN_BOARD = os.getenv("WEKAN_BOARD")
 WEKAN_SWIMLANE = os.getenv("WEKAN_SWIMLANE")
 WEKAN_LIST = os.getenv("WEKAN_LIST")
 WEKAN_USER = os.getenv("WEKAN_USER")
+WEKAN_CUSTOM1 = os.getenv("WEKAN_CUSTOM1")
+WEKAN_CUSTOM2 = os.getenv("WEKAN_CUSTOM2")
 LOCAL = False
 
 def wekan_auth():
@@ -66,22 +68,25 @@ def grab_frab_data():
 
     return talks
 
-def check_card(title):
+def check_card(eventid):
     get_cards = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + WEKAN_LIST + '/cards', headers=headers)
     found = []
     for card in get_cards.json():
-        if card['title'] == title:
-            found.append(card['title'])
-            found.append(card['description'])
-            found.append(card['_id'])
-            continue
-        else:
-            continue
-    logging.debug('found: ' + str(found))
+        card_id = card['_id']
+        get_card = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + WEKAN_LIST + '/cards/' + card_id, headers=headers)
+        for field in get_card.json()['customFields']:
+            logging.debug(field)
+            if field['_id'] == WEKAN_CUSTOM1 and field['value'] == eventid:
+                found.append(card['title'])
+                found.append(card['description'])
+                found.append(card['_id'])
+                found.append(eventid)
+            else:
+                continue
 
     return found
 
-def add_card(title, description, eventid):
+def add_card(title, description, eventid, guid):
     send = '{ "title": "' + title + '", "description": "' + description + '", "authorId": "' + WEKAN_USER + '", "swimlaneId": "' + WEKAN_SWIMLANE + '" }'
     data = send.encode('utf-8')
 
@@ -103,8 +108,7 @@ def add_card(title, description, eventid):
     logging.debug(get_card.json())
     created = str(get_card.json()['createdAt'])
 
-    send = '{ "receivedAt": "' + created + '" }'
-    #, "customFields": "' + guid + '" }'
+    send = '{ "receivedAt": "' + created + '", "customFields" : [ { "_id" : "' + WEKAN_CUSTOM1 + '", "value" : "' + eventid + '" }, { "_id" : "' + WEKAN_CUSTOM2 + '", "value" : "' + guid + '" } ] }'
     data = send.encode('utf-8')
 
     update = requests.put(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + WEKAN_LIST + '/cards/' + card_id, headers=headers, data=data)
@@ -116,7 +120,7 @@ def add_card(title, description, eventid):
 
     return True
 
-def update_card(card, title, description, eventid):
+def update_card(card, title, description, eventid, guid):
     send = '{ "title": "' + title + '", "description": "' + description + '" }'
     data = send.encode('utf-8')
 
@@ -143,7 +147,7 @@ if __name__== "__main__":
         logging.debug('title: ' + key['title'])
         logging.debug('tech_rider: ' + key['tech_rider'])
 
-        title = str(key['id']) + ': ' + key['title']
+        title = key['title']
         desc = key['tech_rider']
         desc = desc.replace('\r', '')
         desc = desc.replace('\n', '<br />')
@@ -151,20 +155,24 @@ if __name__== "__main__":
         desc += '<br /><br />https://frab.cccv.de/en/' + FRAB_ACRONYM + '/events/' + eventid
         guid = str(key['guid'])
 
-        check = check_card(title)
+        check = check_card(eventid)
         logging.debug('check: ' + str(check))
         if check:
-            logging.debug('title: ' + str(check[0]))
-            logging.debug('description: ' + str(check[1]))
-            logging.debug('_id: ' + str(check[2]))
-            if desc == str(check[1]):
-                logging.info('No changes in description')
+            logging.debug('check: title: ' + str(check[0]))
+            logging.debug('json:  title: ' + str(title))
+            logging.debug('check: description: ' + str(check[1]))
+            logging.debug('json:  description: ' + str(desc))
+            logging.debug('check: card_id: ' + str(check[2]))
+            logging.debug('check: event_id: ' + str(check[3]))
+            logging.debug('json:  event_id: ' + str(eventid))
+            if str(desc) == str(check[1]) and str(title) == str(check[0]):
+                logging.info('No changes in description/title')
                 logging.info('Skip card for id ' + str(key['id']))
                 continue
             else:
-                logging.info('Description changed')
+                logging.info('Description/title changed')
                 logging.info('Updating card details for id ' + str(key['id']))
-                update_card(str(check[2]), title, desc, eventid)
+                update_card(str(check[2]), title, desc, eventid, guid)
         else:
             logging.info('Adding new card for id ' + str(key['id']))
-            add_card(title, desc, eventid)
+            add_card(title, desc, eventid, guid)
