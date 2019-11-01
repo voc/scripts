@@ -25,6 +25,7 @@ WEKAN_LIST = os.getenv("WEKAN_LIST")
 WEKAN_USER = os.getenv("WEKAN_USER")
 WEKAN_CUSTOM1 = os.getenv("WEKAN_CUSTOM1")
 WEKAN_CUSTOM2 = os.getenv("WEKAN_CUSTOM2")
+WEKAN_CUSTOM3 = os.getenv("WEKAN_CUSTOM3")
 LOCAL = False
 
 def wekan_auth():
@@ -86,7 +87,7 @@ def check_card(eventid):
 
     return found
 
-def add_card(title, description, eventid, guid):
+def add_card(title, description, eventid, guid, url):
     send = '{ "title": "' + title + '", "description": "' + description + '", "authorId": "' + WEKAN_USER + '", "swimlaneId": "' + WEKAN_SWIMLANE + '" }'
     data = send.encode('utf-8')
 
@@ -108,7 +109,7 @@ def add_card(title, description, eventid, guid):
     logging.debug(get_card.json())
     created = str(get_card.json()['createdAt'])
 
-    send = '{ "receivedAt": "' + created + '", "customFields" : [ { "_id" : "' + WEKAN_CUSTOM1 + '", "value" : "' + eventid + '" }, { "_id" : "' + WEKAN_CUSTOM2 + '", "value" : "' + guid + '" } ] }'
+    send = '{ "receivedAt": "' + created + '", "customFields" : [ { "_id" : "' + WEKAN_CUSTOM1 + '", "value" : "' + eventid + '" }, { "_id" : "' + WEKAN_CUSTOM2 + '", "value" : "' + guid + '" }, { "_id" : "' + WEKAN_CUSTOM3 + '", "value" : "' + url + '" } ] }'
     data = send.encode('utf-8')
 
     update = requests.put(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + WEKAN_LIST + '/cards/' + card_id, headers=headers, data=data)
@@ -152,7 +153,7 @@ if __name__== "__main__":
         desc = desc.replace('\r', '')
         desc = desc.replace('\n', '<br />')
         eventid = str(key['id'])
-        desc += '<br /><br />https://frab.cccv.de/en/' + FRAB_ACRONYM + '/events/' + eventid
+        url = 'https://frab.cccv.de/en/' + FRAB_ACRONYM + '/events/' + eventid
         guid = str(key['guid'])
 
         check = check_card(eventid)
@@ -175,4 +176,4 @@ if __name__== "__main__":
                 update_card(str(check[2]), title, desc, eventid, guid)
         else:
             logging.info('Adding new card for id ' + str(key['id']))
-            add_card(title, desc, eventid, guid)
+            add_card(title, desc, eventid, guid, url)
