@@ -4,6 +4,7 @@
 import requests
 import json
 import os
+import sys
 from dotenv import load_dotenv
 from lxml import etree
 import logging
@@ -56,11 +57,14 @@ def grab_frab_data():
         login_data['authenticity_token'] = auth_token
         sess.post(FRAB_LOGIN_URL, login_data, verify=False)
         talks_json = sess.get(FRAB_JSON_URL, verify=False, stream=True)
-        with open('tech_rider.json', 'w') as fd:
-            fd.write(talks_json.text)
-            fd.close()
-        talks = json.loads(talks_json.text)
-
+        try:
+            talks = json.loads(talks_json.text)
+            with open('tech_rider.json', 'w') as fd:
+               fd.write(talks_json.text)
+               fd.close()
+        except:
+            logging.info('Something went wrong')
+            sys.exit(0)
     else:
         logging.info('Using local cached data')
         with open('tech_rider.json', 'r') as fd:
