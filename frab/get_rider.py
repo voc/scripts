@@ -58,7 +58,15 @@ def grab_frab_data():
         sess.post(FRAB_LOGIN_URL, login_data, verify=False)
         talks_json = sess.get(FRAB_JSON_URL, verify=False, stream=True)
         try:
+            logging.debug('Loading JSON')
             talks = json.loads(talks_json.text)
+        except:
+            logging.info('Something went wrong')
+            sys.exit(0)
+        if talks['report']['count'] == 0:
+            logging.info('JSON is empty.')
+            sys.exit(0)
+        try:
             with open('tech_rider.json', 'w') as fd:
                fd.write(talks_json.text)
                fd.close()
