@@ -82,20 +82,25 @@ def grab_frab_data():
     return talks
 
 def check_card(eventid):
-    get_cards = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + WEKAN_LIST + '/cards', headers=headers)
     found = []
-    for card in get_cards.json():
-        card_id = card['_id']
-        get_card = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + WEKAN_LIST + '/cards/' + card_id, headers=headers)
-        for field in get_card.json()['customFields']:
-            logging.debug(field)
-            if field['_id'] == WEKAN_CUSTOM1 and field['value'] == eventid:
-                found.append(card['title'])
-                found.append(card['description'])
-                found.append(card['_id'])
-                found.append(eventid)
-            else:
-                continue
+    logging.debug('getting lists')
+    get_lists = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists', headers=headers)
+    for lists in get_lists.json():
+        list_id = lists['_id']
+        logging.debug('checking in list: ' + list_id)
+        get_cards = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + list_id + '/cards', headers=headers)
+        for card in get_cards.json():
+            card_id = card['_id']
+            get_card = requests.get(WEKAN_URL + '/api/boards/' + WEKAN_BOARD + '/lists/' + list_id + '/cards/' + card_id, headers=headers)
+            for field in get_card.json()['customFields']:
+                logging.debug(field)
+                if field['_id'] == WEKAN_CUSTOM1 and field['value'] == eventid:
+                    found.append(card['title'])
+                    found.append(card['description'])
+                    found.append(card['_id'])
+                    found.append(eventid)
+                else:
+                    continue
 
     return found
 
