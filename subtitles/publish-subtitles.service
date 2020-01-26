@@ -1,0 +1,9 @@
+[Unit]
+Description=sync new complete subtitles to 
+# voctoweb/media.ccc.de as recordings of type SRT
+
+[Service]
+Type=oneshot
+User=voc
+EnvironmentFile=/home/voc/scripts/subtitles/.env
+ExecStart=/bin/sh -c 'cd /home/voc/scripts/subtitles/ && python3 sync_media_recordings.py'
