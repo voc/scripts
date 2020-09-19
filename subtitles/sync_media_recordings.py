@@ -33,8 +33,11 @@ def main():
         pass
 
     if timestamp:
-      print('last timestamp: ', last_run)
-      store_last_run_timestamp(timestamp[0:-1] + ".99Z")
+        print('previous timestamp: {} new timestamp: {}'.format(last_run, timestamp))
+        store_last_run_timestamp(timestamp[0:-1] + ".99Z")
+    else:
+        #print('did not yield results, please check manually')
+        pass
 
 def process_item(item):
     # ([('GUID', '60936beb-b15d-44ec-a9ca-9dc0807fd889'), ('complete', 'True'), ('media_language', 'deu'), ('srt_language', 'de'), 
