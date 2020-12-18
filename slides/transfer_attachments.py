@@ -14,14 +14,14 @@ import argparse
 import pysftp
 
 
-cp = configparser.ConfigParser()
-cp.read('attachments.conf')
-config = cp
+config = configparser.ConfigParser()
+config.read('client.conf')
 
 parser = argparse.ArgumentParser(description="Transfer slide pdf's from frab to voctoweb")
 parser.add_argument('--since', action='store', default=0, type=int)
 parser.add_argument('--verbose', '-v', action='store_true', default=False)
-parser.add_argument('--offline', action='store_true', default=True)
+parser.add_argument('--offline', action='store_true', default=False)
+parser.add_argument('--dry-run', action='store_false', default=False)
 
 args = parser.parse_args()
 
@@ -31,8 +31,8 @@ offline = args.offline # True -> Schedules nicht von frab.cccv.de herunterladen 
 
 LOGIN_HOST = "https://frab.cccv.de"
 
-conference = "35c3"
-
+conference = "36c3"
+year = 2019
 
 LANG_MAP = {
     "en" : "eng",
@@ -41,20 +41,21 @@ LANG_MAP = {
 
 dry_run = False
 
-base_folder = "/cdn.media.ccc.de/congress/2018/slides-pdf/"
+base_folder = "/cdn.media.ccc.de/congress/{}/slides-pdf/".format(year)
 
 if __name__ == '__main__':
     schedule = None
+    print('Loading schedule...')
     if offline:
         with open("data/schedule_" + conference + ".xml", "r", encoding='utf-8') as f:
             schedule = etree.parse(f)
     else:
-        r = requests.get("http://events.ccc.de/congress/2018/Fahrplan/schedule.xml")
+        r = requests.get("http://events.ccc.de/congress/{}/Fahrplan/schedule.xml".format(year))
         schedule = etree.fromstring(r.content)
 
     if not dry_run:
-        sftp = pysftp.Connection('koeln.media.ccc.de', username='cdn-app', private_key='~/.ssh/id_cdn-app_media')
-        sftp.cd('cdn.media.ccc.de/congress/2018/slides-pdf/')
+        sftp = pysftp.Connection('koeln.media.ccc.de', username='cdn-app')
+        sftp.cd('cdn.media.ccc.de/congress/{}/slides-pdf/'.format(year))
 
     count = 0
     count_missing = 0
@@ -100,36 +101,40 @@ if __name__ == '__main__':
 
                 file_url = LOGIN_HOST + file_path
 
-                with urllib.request.urlopen(file_url) as u:
+                try:
 
-                    if u.getcode() != 200:
-                        sys.stderr.write(" \033[91mERROR: file is not accesible \033[0m\n")
-                        continue
+                    with urllib.request.urlopen(file_url) as u:
 
-                    file_size = int(u.getheader("Content-Length"))
-                    target_file_name = slug + ".pdf"
-                    target_file_path = os.path.join(base_folder, target_file_name)
+                        if u.getcode() != 200:
+                            sys.stderr.write(" \033[91mERROR: file is not accesible \033[0m\n")
+                            continue
 
-                    if not dry_run:
-                        with sftp.open(target_file_path, "wb") as f:
-                            shutil.copyfileobj(u, f)
+                        file_size = int(u.getheader("Content-Length"))
+                        target_file_name = slug + ".pdf"
+                        target_file_path = os.path.join(base_folder, target_file_name)
 
-                    url = 'https://media.ccc.de/api/recordings'
-                    data = {
-                        "api_key": "xxx",
-                        "guid": event.attrib['guid'],
-                        "recording": {
-                            "filename": target_file_name,
-                            "language": LANG_MAP[event.find('language').text],
-                            "mime_type": "application/pdf",
-                            "size": int(file_size / 1024 / 1024),
-                            "folder": "slides-pdf"
-                    } }
+                        if not dry_run:
+                            with sftp.open(target_file_path, "wb") as f:
+                                shutil.copyfileobj(u, f)
 
-                    r = requests.post(url, headers={'CONTENT-TYPE': 'application/json'}, json=data)
-                    if r.status_code != 201:
-                        print("  " + r.status_code)
-                        print("  " + r.text)
+                            url = 'https://media.ccc.de/api/recordings'
+                            data = {
+                                "api_key": config['voctoweb']['api_key'],
+                                "guid": event.attrib['guid'],
+                                "recording": {
+                                    "filename": target_file_name,
+                                    "language": LANG_MAP[event.find('language').text],
+                                    "mime_type": "application/pdf",
+                                    "size": int(file_size / 1024 / 1024),
+                                    "folder": "slides-pdf"
+                            } }
+
+                            r = requests.post(url, headers={'CONTENT-TYPE': 'application/json'}, json=data)
+                            if r.status_code != 201:
+                                print("  {}".format(r.status_code))
+                            print("  " + r.text)
+                except Exception as e:
+                    print(e)
             else:
                 print('   ignoring: ' + basename)
                 continue

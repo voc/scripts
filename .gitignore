@@ -1,3 +1,8 @@
+# Config files containing secrets or simular
+subtitles/.*
+slides/client.conf
+
+
 .idea
 *.py[cod]
 
