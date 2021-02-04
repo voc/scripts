@@ -1,18 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+'''
+export/sync subtitles to voctoweb/media.ccc.de as recordings of type SRT / WebVTT
 
-#==============================================================================
-# Script export sync new complete subtitles to 
-# voctoweb/media.ccc.de as recordings of type SRT
-#==============================================================================
+'''
 
 import os
 import csv
 import requests
+import logging
 from contextlib import closing
 import time
+import paramiko
+
 
 dry_run = False
+ssh = None
+sftp = None
+
+config = {
+    'upload_host': 'koeln.media.ccc.de',
+    'upload_user': 'cdn-app',
+}
+
+mapping = {
+     2: 'todo',
+     7: 'review',
+     8: 'complete',
+    12: 'translated',
+}
+
+VOCTOWEB_API_URL = 'https://media.ccc.de/api'
+VOCTOWEB_API_URL = 'https://media.test.c3voc.de/api'
 
 
 def main():
@@ -45,43 +64,60 @@ def process_item(item):
 
     guid = item['GUID']
 
-    if item['complete']:
+    if item['complete'] == 'True':
         filename = os.path.basename(item['url'])
-        #print(guid, filename)
-
         #print(guid, item['media_language'], 'would be created on media')
         create_recording(guid, {
             "filename": filename,
-            "language": item['media_language']
+            "language": item['media_language'],
+            "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
     else:
-        # TODO check if recording already exists on media, and then delete if necessary
-        # extend
-        print(guid, item['media_language'], 'has to be depublished manually')
-        print(item)
-        pass
+        amara_url = "https://amara.org/api/videos/{}/languages/de/subtitles/?format=vtt".format(item['amara_key'])
+        print(guid, amara_url)
+        filename = '{}-{}.vtt'.format(guid, item['media_language'])
+
+        # print(guid, item['media_language'], 'would be created on media')
+        r = create_recording(guid, {
+            "filename": filename,
+            "mime_type": "text/vtt",
+            "language": item['media_language'],
+            "state": mapping.get(int(item['state']), 'state-' + item['state'])
+        })
+
+        if r and not(dry_run):
+            target = r['public_url'].replace('https:/', '')
+            if not target.startswith('/static.media.ccc.de/'):
+                raise Exception('unexpected target path ' + target)
+            process_and_upload_vtt(amara_url, target)
+
+    time.sleep(1)
+
 
 def create_recording(guid, data):
     data = {
         "api_key": os.environ['VOCTOWEB_API_KEY'],
         "guid": guid,
         "recording": {
-            **data,
             "mime_type": "application/x-subrip",
-            "folder": ""
+            "folder": "",
+            **data
         } 
     }
     if not(dry_run):
-        r = requests.post('https://media.ccc.de/api/recordings', headers={'CONTENT-TYPE': 'application/json'}, json=data)
-        if r.status_code == 422:
-            print("  " + r.json()['event'][0])
-            return False
-        if r.status_code != 201:
+        r = requests.post(VOCTOWEB_API_URL + '/recordings', headers={'CONTENT-TYPE': 'application/json'}, json=data)
+        #if r.status_code == 422:
+        #    print(r.json())
+        #    print("  " + r.json()['event'][0])
+        #    r = requests.patch(VOCTOWEB_API_URL + '/recordings/' + r.json()['event'][0], headers={'CONTENT-TYPE': 'application/json'}, json=data)
+        if r.status_code not in [200, 201]:
             print("  {}".format(r.status_code))
-            print("  " + r.text)
+            print("  " + r.text.split('\n')[0])
+            time.sleep(5)
             return False
-        print('  created recording successfully')
-        return True
+        print('  {} recording successfully'.format('created' if r.status_code == 201 else 'updated'))
+        print("    " + r.text)
+        return r.json()
     print('…')
     time.sleep(0.1)
 
@@ -93,9 +129,55 @@ def load_last_run_timestamp():
 
     return '2020-01-01T0:00:00Z'
 
+
 def store_last_run_timestamp(last_run):
     with open(".last_media_sync_run", "w") as fp:
         fp.write(last_run)
+
+
+def process_and_upload_vtt(url, target):
+    # check if ssh connection is open
+    if ssh is None:
+        connect_ssh()
+
+    try:
+        with urllib.request.urlopen(url) as df:
+            logging.debug('Uploading {} to {}'.format(url, target))
+            with sftp.open(target, 'w+', 32768) as fh:
+                while True:
+                    chunk = df.read(32768)
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+    except paramiko.SSHException as e:
+        raise Exception('could not upload WebVTT because of SSH problem ' + str(e)) from e
+    except IOError as e:
+        raise Exception('could not upload WebVTT because of ' + str(e)) from e
+
+
+def connect_ssh():
+    global ssh, sftp
+    logging.info('Establishing SSH connection')
+    ssh = paramiko.SSHClient()
+    logging.getLogger("paramiko").setLevel(logging.INFO)
+    # TODO set hostkey handling via config
+    # client.get_host_keys().add(upload_host,'ssh-rsa', key)
+    ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(config['upload_host'], username=config['upload_user'], )
+    except paramiko.AuthenticationException as e:
+        raise Exception('Authentication failed. Please check credentials ' + str(e)) from e
+    except paramiko.BadHostKeyException:
+        raise Exception('Bad host key. Check your known_hosts file')
+    except paramiko.SSHException as e:
+        raise Exception('SSH negotiation failed ' + str(e)) from e
+
+    sftp = ssh.open_sftp()
+    logging.info('SSH connection established to ' + str(self.ssh_host))
+
+
+
 
 if __name__ == '__main__':
     main()
