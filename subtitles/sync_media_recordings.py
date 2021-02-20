@@ -15,6 +15,8 @@ import paramiko
 import urllib
 
 dry_run = False
+no_upload = True
+slow_down = False
 ssh = None
 sftp = None
 
@@ -25,8 +27,9 @@ config = {
 
 mapping = {
      2: 'todo',
-     7: 'review',
+     7: 'draft',
      8: 'complete',
+    11: 'todo',
     12: 'translated',
 }
 
@@ -37,6 +40,7 @@ VOCTOWEB_API_URL = 'https://media.test.c3voc.de/api'
 def main():
     last_run = load_last_run_timestamp()
     timestamp = None
+    logging.info(' applying changes on c3subtitles.de since {} to {}'.format(last_run, VOCTOWEB_API_URL))
 
     try:
         url = 'https://media_export:{}@c3subtitles.de/media_export/{}'.format(os.environ['PASSWORD'], last_run)
@@ -44,9 +48,8 @@ def main():
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(r.iter_lines(decode_unicode=True), delimiter=';')
             for item in reader:
-                timestamp = item['touched']
-                print(item['touched'])
                 print(dict(item))
+                timestamp = item['touched']
                 process_item(item)
                 print()
     except KeyboardInterrupt:
@@ -65,16 +68,18 @@ def process_item(item):
 
     guid = item['GUID']
 
-    if item['complete'] == 'True':
+    r = None
+    target = None
+    if item['complete'] == 'True' or item['released_as_draft'] == 'True':
         filename = os.path.basename(item['url'])
         #print(guid, item['media_language'], 'would be created on media')
-        create_recording(guid, {
+        r = create_recording(guid, {
             "filename": filename,
             "language": item['media_language'],
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
+        target = os.path.dirname(r['public_url']).replace('http://cdn.media.ccc.de/', '/static.media.ccc.de/') + '/{}-{}.vtt'.format(guid, item['media_language'])
     else:
-        amara_url = "https://amara.org/api/videos/{}/languages/{}/subtitles/?format=vtt".format(item['amara_key'], item['amara_language'])
         #print(guid, amara_url)
         filename = '{}-{}.vtt'.format(guid, item['media_language'])
 
@@ -85,14 +90,15 @@ def process_item(item):
             "language": item['media_language'],
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
+        target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
 
-        if r and not(dry_run):
-            target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
-            if not target.startswith('/static.media.ccc.de/'):
-                raise Exception('unexpected target path ' + target)
-            process_and_upload_vtt(amara_url, target)
+    amara_url = "https://amara.org/api/videos/{}/languages/{}/subtitles/?format=vtt".format(item['amara_key'], item['amara_language'])
+    if target and not(dry_run) and not(no_upload):
+        if not target.startswith('/static.media.ccc.de/'):
+            raise Exception('unexpected target path ' + target)
+        process_and_upload_vtt(amara_url, target)
 
-    time.sleep(1)
+    #time.sleep(1)
 
 
 def create_recording(guid, data):
@@ -114,13 +120,13 @@ def create_recording(guid, data):
         if r.status_code not in [200, 201]:
             print("  {}".format(r.status_code))
             print("  " + r.text.split('\n')[0])
-            time.sleep(5)
+            slow_down and time.sleep(5)
             return False
         print('  {} recording successfully'.format('created' if r.status_code == 201 else 'updated'))
         print("    " + r.text)
         return r.json()
     print('…')
-    time.sleep(0.1)
+    slow_down and time.sleep(0.1)
 
 
 def load_last_run_timestamp():
@@ -179,4 +185,5 @@ def connect_ssh():
 
 
 if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
     main()
