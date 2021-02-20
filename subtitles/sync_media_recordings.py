@@ -12,7 +12,7 @@ import logging
 from contextlib import closing
 import time
 import paramiko
-
+import urllib
 
 dry_run = False
 ssh = None
@@ -40,6 +40,7 @@ def main():
 
     try:
         url = 'https://media_export:{}@c3subtitles.de/media_export/{}'.format(os.environ['PASSWORD'], last_run)
+        logging.info('loading c3subtitles.de/media_export/')
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(r.iter_lines(decode_unicode=True), delimiter=';')
             for item in reader:
@@ -73,8 +74,8 @@ def process_item(item):
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
     else:
-        amara_url = "https://amara.org/api/videos/{}/languages/de/subtitles/?format=vtt".format(item['amara_key'])
-        print(guid, amara_url)
+        amara_url = "https://amara.org/api/videos/{}/languages/{}/subtitles/?format=vtt".format(item['amara_key'], item['amara_language'])
+        #print(guid, amara_url)
         filename = '{}-{}.vtt'.format(guid, item['media_language'])
 
         # print(guid, item['media_language'], 'would be created on media')
@@ -86,7 +87,7 @@ def process_item(item):
         })
 
         if r and not(dry_run):
-            target = r['public_url'].replace('https:/', '')
+            target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
             if not target.startswith('/static.media.ccc.de/'):
                 raise Exception('unexpected target path ' + target)
             process_and_upload_vtt(amara_url, target)
@@ -142,8 +143,8 @@ def process_and_upload_vtt(url, target):
 
     try:
         with urllib.request.urlopen(url) as df:
-            logging.debug('Uploading {} to {}'.format(url, target))
-            with sftp.open(target, 'w+', 32768) as fh:
+            print('  uploading {} to {}'.format(url, target))
+            with sftp.open(target, 'w', 32768) as fh:
                 while True:
                     chunk = df.read(32768)
                     if not chunk:
@@ -159,9 +160,7 @@ def connect_ssh():
     global ssh, sftp
     logging.info('Establishing SSH connection')
     ssh = paramiko.SSHClient()
-    logging.getLogger("paramiko").setLevel(logging.INFO)
-    # TODO set hostkey handling via config
-    # client.get_host_keys().add(upload_host,'ssh-rsa', key)
+    logging.getLogger("paramiko").setLevel(logging.ERROR)
     ssh.load_system_host_keys()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -174,7 +173,7 @@ def connect_ssh():
         raise Exception('SSH negotiation failed ' + str(e)) from e
 
     sftp = ssh.open_sftp()
-    logging.info('SSH connection established to ' + str(self.ssh_host))
+    logging.info('SSH connection established to ' + config['upload_host'])
 
 
 
