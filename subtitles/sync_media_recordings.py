@@ -15,7 +15,7 @@ import paramiko
 import urllib
 
 dry_run = False
-no_upload = True
+no_upload = False
 slow_down = False
 ssh = None
 sftp = None
@@ -34,7 +34,7 @@ mapping = {
 }
 
 VOCTOWEB_API_URL = 'https://media.ccc.de/api'
-VOCTOWEB_API_URL = 'https://media.test.c3voc.de/api'
+#VOCTOWEB_API_URL = 'https://media.test.c3voc.de/api'
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
 
     try:
         url = 'https://media_export:{}@c3subtitles.de/media_export/{}'.format(os.environ['PASSWORD'], last_run)
-        logging.info('loading c3subtitles.de/media_export/')
+        logging.info(' loading c3subtitles.de/media_export/ ')
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(r.iter_lines(decode_unicode=True), delimiter=';')
             for item in reader:
@@ -54,13 +54,13 @@ def main():
                 print()
     except KeyboardInterrupt:
         pass
-
-    if timestamp:
-        print('previous timestamp: {} new timestamp: {}'.format(last_run, timestamp))
-        store_last_run_timestamp(timestamp[0:-1] + ".99Z")
-    else:
-        #print('did not yield results, please check manually')
-        pass
+    finally:
+        if timestamp:
+            print('previous timestamp: {} new timestamp: {}'.format(last_run, timestamp))
+            store_last_run_timestamp(timestamp[0:-1] + ".99Z")
+        else:
+            print('did not yield results, please check manually')
+            pass
 
 def process_item(item):
     # ([('GUID', '60936beb-b15d-44ec-a9ca-9dc0807fd889'), ('complete', 'True'), ('media_language', 'deu'), ('srt_language', 'de'), 
@@ -69,16 +69,21 @@ def process_item(item):
     guid = item['GUID']
 
     r = None
-    target = None
     if item['complete'] == 'True' or item['released_as_draft'] == 'True':
         filename = os.path.basename(item['url'])
         #print(guid, item['media_language'], 'would be created on media')
         r = create_recording(guid, {
             "filename": filename,
+            "mime_type": "application/x-subrip",
             "language": item['media_language'],
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
-        target = os.path.dirname(r['public_url']).replace('http://cdn.media.ccc.de/', '/static.media.ccc.de/') + '/{}-{}.vtt'.format(guid, item['media_language'])
+        if r and not(dry_run) and not(no_upload):
+            target = os.path.dirname(r['public_url']).replace('https://cdn.media.ccc.de/', '/static.media.ccc.de/') + '/{}-{}.vtt'.format(guid, item['media_language'])
+            amara_url = "https://amara.org/api/videos/{}/languages/{}/subtitles/?format=vtt".format(item['amara_key'], item['amara_language'])
+            if not target.startswith('/static.media.ccc.de/'):
+                raise Exception('unexpected target path ' + target)
+            process_and_upload_vtt(amara_url, target)
     else:
         #print(guid, amara_url)
         filename = '{}-{}.vtt'.format(guid, item['media_language'])
@@ -90,13 +95,7 @@ def process_item(item):
             "language": item['media_language'],
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
-        target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
-
-    amara_url = "https://amara.org/api/videos/{}/languages/{}/subtitles/?format=vtt".format(item['amara_key'], item['amara_language'])
-    if target and not(dry_run) and not(no_upload):
-        if not target.startswith('/static.media.ccc.de/'):
-            raise Exception('unexpected target path ' + target)
-        process_and_upload_vtt(amara_url, target)
+        #target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
 
     #time.sleep(1)
 
@@ -106,7 +105,6 @@ def create_recording(guid, data):
         "api_key": os.environ['VOCTOWEB_API_KEY'],
         "guid": guid,
         "recording": {
-            "mime_type": "application/x-subrip",
             "folder": "",
             **data
         } 
@@ -121,6 +119,8 @@ def create_recording(guid, data):
             print("  {}".format(r.status_code))
             print("  " + r.text.split('\n')[0])
             slow_down and time.sleep(5)
+            if r.status_code == 422:
+                return r.json()
             return False
         print('  {} recording successfully'.format('created' if r.status_code == 201 else 'updated'))
         print("    " + r.text)
@@ -150,6 +150,10 @@ def process_and_upload_vtt(url, target):
     try:
         with urllib.request.urlopen(url) as df:
             print('  uploading {} to {}'.format(url, target))
+            try:
+                sftp.mkdir(os.path.dirname(target))
+            except:
+                pass
             with sftp.open(target, 'w', 32768) as fh:
                 while True:
                     chunk = df.read(32768)
