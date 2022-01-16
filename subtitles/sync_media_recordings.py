@@ -5,7 +5,7 @@ export/sync subtitles to voctoweb/media.ccc.de as recordings of type SRT / WebVT
 
 '''
 
-import os
+from os import path, environ
 import csv
 import requests
 import logging
@@ -40,10 +40,10 @@ VOCTOWEB_API_URL = 'https://media.ccc.de/api'
 def main():
     last_run = load_last_run_timestamp()
     timestamp = None
-    logging.info(' applying changes on c3subtitles.de since {} to {}'.format(last_run, VOCTOWEB_API_URL))
+    logging.info(f' applying changes on c3subtitles.de since {last_run} to {VOCTOWEB_API_URL}')
 
     try:
-        url = 'https://media_export:{}@c3subtitles.de/media_export/{}'.format(os.environ['PASSWORD'], last_run)
+        url = f'https://media_export:{environ['PASSWORD']}@c3subtitles.de/media_export/{last_run}'
         logging.info(' loading c3subtitles.de/media_export/ ')
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(r.iter_lines(decode_unicode=True), delimiter=';')
@@ -56,7 +56,7 @@ def main():
         pass
     finally:
         if timestamp:
-            print('previous timestamp: {} new timestamp: {}'.format(last_run, timestamp))
+            print(f'previous timestamp: {last_run} new timestamp: {timestamp}')
             store_last_run_timestamp(timestamp[0:-1] + ".99Z")
         else:
             print('did not yield results, please check manually')
@@ -64,45 +64,55 @@ def main():
 
 def process_item(item):
     # ([('GUID', '60936beb-b15d-44ec-a9ca-9dc0807fd889'), ('complete', 'True'), ('media_language', 'deu'), ('srt_language', 'de'), 
-    #   ('last_changed_on_amara', '2020-01-08T19:50:25Z'), ('revision', '16'), ('url', 'https://mirror.selfnet.de/c3subtitles/congress/36c3/36c3-10766-deu-eng-spa-Digitalisierte_Migrationskontrolle.de.srt')])
+    #   ('last_changed_on_amara', '2020-01-08T19:50:25Z'), ('revision', '16'), ('url', 'https://mirror.selfnet.de/c3subtitles/congress/36c3/36c3-10766-deu-eng-spa-Digitalisierte_Migrationskontrolle.de.srt')
+    # ])
 
     guid = item['GUID']
-
     r = None
+
+    # when flags 'complete' or 'released_as_draft' are true, create SRT recording on media  
     if item['complete'] == 'True' or item['released_as_draft'] == 'True':
-        filename = os.path.basename(item['url'])
-        #print(guid, item['media_language'], 'would be created on media')
-        r = create_recording(guid, {
+        # logging.debug(guid, item['media_language'], 'would be created on media')
+
+        filename = path.basename(item['url']) # e.g. '36c3-10766-deu-eng-spa-Digitalisierte_Migrationskontrolle.de.srt'
+        
+        # upsert subtitle recording, will update subtitle recording from previous else due to unique constraint on language
+        r = upsert_recording(guid, {
             "filename": filename,
             "mime_type": "application/x-subrip",
             "language": item['media_language'],
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
+        # download vtt file from amara for new player (which does not support srt)
         if r and not(dry_run) and not(no_upload):
-            target = os.path.dirname(r['public_url']).replace('https://cdn.media.ccc.de/', '/static.media.ccc.de/') + '/{}-{}.vtt'.format(guid, item['media_language'])
-            amara_url = "https://amara.org/api/videos/{}/languages/{}/subtitles/?format=vtt".format(item['amara_key'], item['amara_language'])
+            target = path.dirname(r['public_url']).replace('https://cdn.media.ccc.de/', '/static.media.ccc.de/') + f'/{guid}-{item['media_language']}.vtt'
+            amara_url = f"https://amara.org/api/videos/{item['amara_key']}/languages/{item['amara_language']}/subtitles/?format=vtt"
             if not target.startswith('/static.media.ccc.de/'):
                 raise Exception('unexpected target path ' + target)
+            
             process_and_upload_vtt(amara_url, target)
-    else:
-        #print(guid, amara_url)
-        filename = '{}-{}.vtt'.format(guid, item['media_language'])
 
-        # print(guid, item['media_language'], 'would be created on media')
-        r = create_recording(guid, {
+    # otherwise create placeholder VTT recording to display current status
+    else:
+        # logging.debug(guid, item['media_language'], 'would be created on media')
+
+        filename = f'{guid}-{item['media_language']}.vtt' # e.g. '60936beb-b15d-44ec-a9ca-9dc0807fd889-deu.vtt'
+
+        # create placeholder recording with the current state
+        r = upsert_recording(guid, {
             "filename": filename,
             "mime_type": "text/vtt",
             "language": item['media_language'],
             "state": mapping.get(int(item['state']), 'state-' + item['state'])
         })
-        #target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
+        # target = r['public_url'].replace('https://static.media.ccc.de/media/', '/static.media.ccc.de/')
 
-    #time.sleep(1)
+    # time.sleep(1)
 
 
-def create_recording(guid, data):
+def upsert_recording(guid, data):
     data = {
-        "api_key": os.environ['VOCTOWEB_API_KEY'],
+        "api_key": environ['VOCTOWEB_API_KEY'],
         "guid": guid,
         "recording": {
             "folder": "",
@@ -110,11 +120,8 @@ def create_recording(guid, data):
         } 
     }
     if not(dry_run):
+        # create or update recording in voctoweb
         r = requests.post(VOCTOWEB_API_URL + '/recordings', headers={'CONTENT-TYPE': 'application/json'}, json=data)
-        #if r.status_code == 422:
-        #    print(r.json())
-        #    print("  " + r.json()['event'][0])
-        #    r = requests.patch(VOCTOWEB_API_URL + '/recordings/' + r.json()['event'][0], headers={'CONTENT-TYPE': 'application/json'}, json=data)
         if r.status_code not in [200, 201]:
             print("  {}".format(r.status_code))
             print("  " + r.text.split('\n')[0])
@@ -122,15 +129,15 @@ def create_recording(guid, data):
             if r.status_code == 422:
                 return r.json()
             return False
-        print('  {} recording successfully'.format('created' if r.status_code == 201 else 'updated'))
-        print("    " + r.text)
+        print(f"  {'created' if r.status_code == 201 else 'updated'} recording successfully")
+        print(f"    {r.text}")
         return r.json()
     print('…')
     slow_down and time.sleep(0.1)
 
 
 def load_last_run_timestamp():
-    if os.path.isfile(".last_media_sync_run"):
+    if path.isfile(".last_media_sync_run"):
         with open(".last_media_sync_run", "r") as fp:
             return fp.read()
 
@@ -151,7 +158,7 @@ def process_and_upload_vtt(url, target):
         with urllib.request.urlopen(url) as df:
             print('  uploading {} to {}'.format(url, target))
             try:
-                sftp.mkdir(os.path.dirname(target))
+                sftp.mkdir(path.dirname(target))
             except:
                 pass
             with sftp.open(target, 'w', 32768) as fh:
