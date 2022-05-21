@@ -3,18 +3,18 @@ from typing import Optional, List, Any
 
 @dataclass
 class Address:
-    label: str
-    streetAddress: str
-    countryCode: str
-    administrativeArea: str
-    streetName: str
-    formattedAddressLines: List[str]
-    mapItemFullAddress: str
-    fullThroroughfare: str
-    locality: str
-    country: str
-    areaOfInterest: List[Any]
-    stateCode: Optional[str]
+    label: str = None
+    streetAddress: Optional[str] = None
+    stateCode: Optional[str] = None
+    countryCode: Optional[str] = None
+    administrativeArea: Optional[str] = None
+    streetName: Optional[str] = None
+    formattedAddressLines: Optional[List[str]] = None
+    mapItemFullAddress: Optional[str] = None
+    fullThroroughfare: Optional[str] = None
+    locality: Optional[str] = None
+    country: Optional[str] = None
+    # areaOfInterest: List[Any]
 
 
 @dataclass
