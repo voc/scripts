@@ -1,0 +1,2 @@
+dacite
+paho-mqtt

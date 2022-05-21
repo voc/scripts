@@ -5,20 +5,22 @@ import shutil
 import subprocess
 import random
 import paho.mqtt.client as mqtt
-import dacite
 from dacite import from_dict
 
 from airtag import Item
 
 
 home = os.path.expanduser('~')
+source_file = home + '/Library/Caches/com.apple.findmy.fmipcore/Items.data'
+source_file = './temp.json'
 temp_file = '/tmp/air-tags'
 last_mtime = 0
+
 broker = 'mqtt.c3voc.de'
 port = 1883
 username = 'script'
 password = os.environ['PASSWORD']
-topic = '/owntracks/voc'
+topic = 'owntracks/voc'
 client_id = f'airtag2mqtt-{random.randint(0, 1000)}'
 mq = None
 
@@ -48,24 +50,25 @@ def connect_mqtt():
     return client
 
 
-def publish_location(item: Item):
+def publish_location(item: Item, raw):
     # https://owntracks.org/booklet/tech/json/#_typelocation
-    slug = item.name.replace(' ', '').tolower()
+    slug = item.name.replace(' ', '').lower()
     print(item)
-    result = mq.publish(f"{topic}/{slug}", {
+    result = mq.publish(f"{topic}/{slug}", json.dumps({
         '_type': 'location',
         'lat': item.location.latitude,
         'lon': item.location.longitude,
-        'batt': (6 - item.battery_status) * 20,
+        'batt': (6 - item.batteryStatus) * 20,
         'tid': item.name.split(' ')[1],
-        'tst': item.location.time_stamp
-    })
+        'tst': item.location.timeStamp,
+        'raw': raw
+    }))
     # result: [0, 1]
     status = result[0]
     if status == 0:
-        print(f"Send location of `{item.name}` to topic `{topic}`")
+        print(f"Sent location of `{item.role.emoji} {item.name}` to topic `{topic}/{slug}`")
     else:
-        print(f"Failed to send message to topic {topic}")
+        print(f"Failed to send message to topic {topic}/{slug}")
 
 
 def process_locations():
@@ -74,12 +77,12 @@ def process_locations():
     print("Starting to read locations")
 
     try:
-        current_mtime = os.path.getmtime(home + '/Library/Caches/com.apple.findmy.fmipcore/Items.data')
+        current_mtime = os.path.getmtime(source_file)
         if not current_mtime > last_mtime:
             print("Skipping file hasn't changed")
             return last_mtime
         last_mtime = current_mtime
-        shutil.copyfile(home + '/Library/Caches/com.apple.findmy.fmipcore/Items.data', temp_file)
+        shutil.copyfile(source_file, temp_file)
     except Exception as e:
         print("Unable to copy file, check permissions")
         print(e)
@@ -90,7 +93,7 @@ def process_locations():
         for item in data:
 
             print('.', end='')
-            publish_location(from_dict(data_class=Item, data=item), config=dacite.Config(check_types=False))
+            publish_location(from_dict(data_class=Item, data=item), item)
 
             '''
             name=t["name"]

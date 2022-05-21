@@ -1,76 +1,71 @@
 from dataclasses import dataclass
-from typing import List, Any, Optional
-
+from typing import Optional, List, Any
 
 @dataclass
 class Address:
-    sub_administrative_area: str
     label: str
-    street_address: int
-    country_code: str
-    state_code: None
-    administrative_area: str
-    street_name: str
-    formatted_address_lines: List[str]
-    map_item_full_address: str
-    full_throroughfare: str
-    area_of_interest: List[Any]
+    streetAddress: str
+    countryCode: str
+    administrativeArea: str
+    streetName: str
+    formattedAddressLines: List[str]
+    mapItemFullAddress: str
+    fullThroroughfare: str
     locality: str
     country: str
+    areaOfInterest: List[Any]
+    stateCode: Optional[str]
 
 
 @dataclass
 class Location:
-    position_type: str
-    vertical_accuracy: int
-    longitude: float
-    floor_level: int
-    is_inaccurate: bool
-    is_old: bool
-    horizontal_accuracy: float
-    latitude: float
-    time_stamp: int
-    altitude: int
-    location_finished: bool
+    positionType: Optional[str] = None
+    verticalAccuracy: Optional[int] = None
+    longitude: Optional[float] = None
+    floorLevel: Optional[int] = None
+    isInaccurate: Optional[bool] = None
+    isOld: Optional[bool] = None
+    horizontalAccuracy: Optional[float] = None
+    latitude: Optional[float] = None
+    timeStamp: Optional[int] = None
+    altitude: Optional[int] = None
+    locationFinished: Optional[bool] = None
 
 
 @dataclass
 class ProductInformation:
-    manufacturer_name: str
-    model_name: str
-    product_identifier: int
-    vendor_identifier: int
-    antenna_power: int
+    manufacturerName: Optional[str] = None
+    modelName: Optional[str] = None
+    productIdentifier: Optional[int] = None
+    vendorIdentifier: Optional[int] = None
+    antennaPower: Optional[int] = None
 
 
 @dataclass
 class ProductType:
-    type: Optional[str]
-    product_information: ProductInformation
+    type: Optional[str] = None
+    productInformation: Optional[ProductInformation] = None
 
 
 @dataclass
 class Role:
-    name: str
-    emoji: str
-    identifier: int
+    name: str = None
+    emoji: str = None
+    identifier: int = None
 
 
 @dataclass
 class Item:
-    safe_locations: Optional[List[Any]]
-    product_type: ProductType
-    is_firmware_update_mandatory: bool
-    owner: str
-    battery_status: int
-    serial_number: str
-    #lost_mode_metadata: None
-    capabilities: int
-    identifier: str
-    address: Address
-    location: Location
-    system_version: str
-    crowd_sourced_location: Location
-    role: Role
-    #group_identifier: None
     name: str
+    role: Role
+    productType: Optional[ProductType] = None
+    owner: Optional[str] = None
+    batteryStatus: Optional[int] = None
+    serialNumber: Optional[str] = None
+    capabilities: Optional[int] = None
+    identifier: Optional[str] = None
+    address: Optional[Address] = None
+    location: Optional[Location] = None
+    systemVersion: Optional[str] = None
+    crowdSourcedLocation: Optional[Location] = None
+
