@@ -12,7 +12,7 @@ from airtag import Item
 
 home = os.path.expanduser('~')
 source_file = home + '/Library/Caches/com.apple.findmy.fmipcore/Items.data'
-source_file = './temp.json'
+# source_file = './temp.json'
 temp_file = '/tmp/air-tags'
 last_mtime = 0
 
@@ -59,7 +59,7 @@ def publish_location(item: Item, raw):
         'lat': item.location.latitude,
         'lon': item.location.longitude,
         'batt': (6 - item.batteryStatus) * 20,
-        'tid': item.name.split(' ')[1],
+        'tid': item.role.emoji,  # item.name.split(' ')[1],
         'tst': item.location.timeStamp,
         'raw': raw
     }))
