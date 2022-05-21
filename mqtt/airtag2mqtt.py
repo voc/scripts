@@ -5,6 +5,8 @@ import shutil
 import subprocess
 import random
 import paho.mqtt.client as mqtt
+import dacite
+from dacite import from_dict
 
 from airtag import Item
 
@@ -48,7 +50,9 @@ def connect_mqtt():
 
 def publish_location(item: Item):
     # https://owntracks.org/booklet/tech/json/#_typelocation
-    result = mq.publish(f"{topic}/{item.name.replace(' ', '')}", {
+    slug = item.name.replace(' ', '').tolower()
+    print(item)
+    result = mq.publish(f"{topic}/{slug}", {
         '_type': 'location',
         'lat': item.location.latitude,
         'lon': item.location.longitude,
@@ -86,7 +90,7 @@ def process_locations():
         for item in data:
 
             print('.', end='')
-            publish_location(item)
+            publish_location(from_dict(data_class=Item, data=item), config=dacite.Config(check_types=False))
 
             '''
             name=t["name"]

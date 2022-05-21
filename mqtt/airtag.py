@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Any
+from typing import List, Any, Optional
 
 
 @dataclass
@@ -45,7 +45,7 @@ class ProductInformation:
 
 @dataclass
 class ProductType:
-    type: str
+    type: Optional[str]
     product_information: ProductInformation
 
 
@@ -58,14 +58,13 @@ class Role:
 
 @dataclass
 class Item:
-    part_info: None
-    safe_locations: List[Any]
+    safe_locations: Optional[List[Any]]
     product_type: ProductType
     is_firmware_update_mandatory: bool
     owner: str
     battery_status: int
     serial_number: str
-    lost_mode_metadata: None
+    #lost_mode_metadata: None
     capabilities: int
     identifier: str
     address: Address
@@ -73,5 +72,5 @@ class Item:
     system_version: str
     crowd_sourced_location: Location
     role: Role
-    group_identifier: None
+    #group_identifier: None
     name: str
