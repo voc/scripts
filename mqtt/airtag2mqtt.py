@@ -91,49 +91,12 @@ def process_locations():
     with open(temp_file) as json_file:
         data = json.load(json_file)
         for item in data:
-
-            print('.', end='')
-            publish_location(from_dict(data_class=Item, data=item), item)
-
-            '''
-            name=t["name"]
-            model_name=t["productType"]["productInformation"]["modelName"]
-            serialnumber=t["serialNumber"]
-            producttype=t["productType"]["type"]
-            productindentifier=t["productType"]["productInformation"]["productIdentifier"]
-            vendoridentifier=t["productType"]["productInformation"]["vendorIdentifier"]
-            antennapower=t["productType"]["productInformation"]["antennaPower"]
-            systemversion=t["systemVersion"]
-            batterystatus=t["batteryStatus"]
-            locationpositiontype=t["location"]["positionType"]
-            locationlatitude=t["location"]["latitude"]
-            locationlongitude=t["location"]["longitude"]
-            locationtimestamp=t["location"]["timeStamp"]
-            locationverticalaccuracy=t["location"]["verticalAccuracy"]
-            locationhorizontalaccuracy=t["location"]["horizontalAccuracy"]
-            locationfloorlevel=t["location"]["floorLevel"]
-            locationaltitude=t["location"]["altitude"]
-            locationisinaccurate=t["location"]["isInaccurate"]
-            locationisold=t["location"]["isOld"]
-            locationfinished=t["location"]["locationFinished"]
-            addresslabel=t["address"]["label"]
-            addressstreetaddress=t["address"]["streetAddress"]
-            addresscountrycode=t["address"]["countryCode"]
-            addressstatecode=t["address"]["stateCode"]
-            addressadministrativearea=t["address"]["administrativeArea"]
-            addressstreetname=t["address"]["streetName"]
-            addresslocality=t["address"]["locality"]
-            addresscountry=t["address"]["country"]
-            try:
-                addressareaofinterest0=t["address"]["areaOfInterest"][0]
-            except Exception:
-                addressareaofinterest0=""
-            try:
-                addressareaofinterest1=t["address"]["areaOfInterest"][1]
-            except Exception:
-                addressareaofinterest1=""
-            batterystatus=t["batteryStatus"]
-            '''
+            try: 
+                print('.', end='')
+                publish_location(from_dict(data_class=Item, data=item), item)
+            except Exception as e:
+                print(e)
+                print(item)
 
     print("\nDone, sleeping")
     return last_mtime
