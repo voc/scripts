@@ -75,6 +75,7 @@ def publish_location(item: Item, raw):
             allowlisted_slug = True
     if not allowlisted_slug:
         logging.warning(f"Skipping {slug} because not in VALID_PREFIXES")
+        return
     logging.debug(item)
     result = mq.publish(f"{topic}/{slug}", json.dumps({
         '_type': 'location',
