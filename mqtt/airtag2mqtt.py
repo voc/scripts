@@ -34,6 +34,12 @@ topic = 'owntracks/voc'
 client_id = f'airtag2mqtt-{random.randint(0, 1000)}'
 mq = None
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s',
+    datefmt='%H:%M:%S'
+)
+
 
 def main():
     global mq
@@ -90,7 +96,7 @@ def publish_location(item: Item, raw):
 def process_locations():
     global last_mtime
 
-    print("Starting to read locations")
+    logging.info("Starting to read locations")
 
     try:
         current_mtime = os.path.getmtime(source_file)
