@@ -14,9 +14,9 @@ import logging
 
 VALID_PREFIXES = {
     'audio',
-    'case',
     'regie',
     'server',
+    'video',
 }
 
 
