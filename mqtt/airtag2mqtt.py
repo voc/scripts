@@ -9,6 +9,16 @@ from dacite import from_dict
 
 from airtag import Item
 
+import logging
+
+
+VALID_PREFIXES = {
+    'audio',
+    'case',
+    'regie',
+    'server',
+}
+
 
 home = os.path.expanduser('~')
 source_file = home + '/Library/Caches/com.apple.findmy.fmipcore/Items.data'
@@ -39,9 +49,9 @@ def main():
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
-            print("Connected to MQTT Broker!")
+            logging.info("Connected to MQTT Broker!")
         else:
-            print("Failed to connect, return code %d\n", rc)
+            logging.error("Failed to connect, return code %d\n", rc)
     # Set Connecting Client ID
     client = mqtt.Client(client_id)
     client.username_pw_set(username, password)
@@ -53,22 +63,28 @@ def connect_mqtt():
 def publish_location(item: Item, raw):
     # https://owntracks.org/booklet/tech/json/#_typelocation
     slug = item.name.replace(' ', '').lower()
-    print(item)
+    allowlisted_slug = False
+    for prefix in VALID_PREFIXES:
+        if slug.startswith(prefix):
+            allowlisted_slug = True
+    if not allowlisted_slug:
+        logging.info(f"Skipping {slug} because not in VALID_PREFIXES")
+    logging.debug(item)
     result = mq.publish(f"{topic}/{slug}", json.dumps({
         '_type': 'location',
         'lat': item.location.latitude,
         'lon': item.location.longitude,
         'batt': (6 - item.batteryStatus) * 20,
         'tid': item.role.emoji,  # item.name.split(' ')[1],
-        'tst': item.location.timeStamp,
+        'tst': int(item.location.timeStamp/1000), # apple does ms, owntracks does seconds
         'raw': raw
     }))
     # result: [0, 1]
     status = result[0]
     if status == 0:
-        print(f"Sent location of `{item.role.emoji} {item.name}` to topic `{topic}/{slug}`")
+        logging.info(f"Sent location of `{item.role.emoji} {item.name}` to topic `{topic}/{slug}`")
     else:
-        print(f"Failed to send message to topic {topic}/{slug}")
+        logging.error(f"Failed to send message to topic {topic}/{slug}")
 
 
 def process_locations():
@@ -79,33 +95,32 @@ def process_locations():
     try:
         current_mtime = os.path.getmtime(source_file)
         if not current_mtime > last_mtime:
-            print("Skipping file hasn't changed")
+            logging.debug("Skipping file hasn't changed")
             return last_mtime
         last_mtime = current_mtime
         shutil.copyfile(source_file, temp_file)
     except Exception as e:
-        print("Unable to copy file, check permissions")
-        print(e)
+        logging.error("Unable to copy file, check permissions")
+        logging.exception(e)
         exit(2)
 
     with open(temp_file) as json_file:
         data = json.load(json_file)
         for item in data:
-            try: 
-                print('.', end='')
+            try:
                 publish_location(from_dict(data_class=Item, data=item), item)
             except Exception as e:
-                print(e)
-                print(item)
+                logging.exception(e)
+                logging.debug(item)
 
-    print("\nDone, sleeping")
+    logging.info("Done, sleeping")
     return last_mtime
 
 
 def checkRunning():
     output = int(subprocess.getoutput('ps aux|grep "FindMy.app/Contents/MacOS/FindM[y]"|wc -l'))
     if output <= 0:
-        print("FindMy not running so attempting to start")
+        logging.warning("FindMy not running so attempting to start")
         subprocess.getoutput("open /System/Applications/FindMy.app")
 
 
