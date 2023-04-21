@@ -74,7 +74,7 @@ def publish_location(item: Item, raw):
         if slug.startswith(prefix):
             allowlisted_slug = True
     if not allowlisted_slug:
-        logging.info(f"Skipping {slug} because not in VALID_PREFIXES")
+        logging.warning(f"Skipping {slug} because not in VALID_PREFIXES")
     logging.debug(item)
     result = mq.publish(f"{topic}/{slug}", json.dumps({
         '_type': 'location',
@@ -101,7 +101,7 @@ def process_locations():
     try:
         current_mtime = os.path.getmtime(source_file)
         if not current_mtime > last_mtime:
-            logging.debug("Skipping file hasn't changed")
+            logging.info("Skipping file hasn't changed")
             return last_mtime
         last_mtime = current_mtime
         shutil.copyfile(source_file, temp_file)
