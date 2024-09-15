@@ -15,7 +15,7 @@ sub test {
         my $name = $File::Find::name;
 
         return unless -f $name;
-        return unless $name =~ /\.dv/i;
+        return unless $name =~ /\.(dv|ts)/i;
 
         my $mtime = (stat($name))[9];
 
@@ -30,13 +30,14 @@ sub test {
 
 {
         no warnings;
-        find({no_chdir => 1, wanted => \&test}, $AR
+        find({no_chdir => 1, wanted => \&test}, $ARGV[0]);
 }
 
 if($okay) {
-        say "OK delta is $delta_okay (current file:
+        say "OK delta is $delta_okay (current file: $name_okay)";
         exit 0;
 } else {
-        say "CRITICAL no recordings for more than $
+        say "CRITICAL no recordings for more than $threshold seconds";
         exit 2;
 }
+
