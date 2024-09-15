@@ -43,7 +43,7 @@ def main():
     logging.info(f' applying changes on c3subtitles.de since {last_run} to {VOCTOWEB_API_URL}')
 
     try:
-        url = f'https://media_export:{environ['PASSWORD']}@c3subtitles.de/media_export/{last_run}'
+        url = f'https://media_export:{environ["PASSWORD"]}@c3subtitles.de/media_export/{last_run}'
         logging.info(' loading c3subtitles.de/media_export/ ')
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(r.iter_lines(decode_unicode=True), delimiter=';')
@@ -85,7 +85,7 @@ def process_item(item):
         })
         # download vtt file from amara for new player (which does not support srt)
         if r and not(dry_run) and not(no_upload):
-            target = path.dirname(r['public_url']).replace('https://cdn.media.ccc.de/', '/static.media.ccc.de/') + f'/{guid}-{item['media_language']}.vtt'
+            target = path.dirname(r['public_url']).replace('https://cdn.media.ccc.de/', '/static.media.ccc.de/') + f'/{guid}-{item["media_language"]}.vtt'
             amara_url = f"https://amara.org/api/videos/{item['amara_key']}/languages/{item['amara_language']}/subtitles/?format=vtt"
             if not target.startswith('/static.media.ccc.de/'):
                 raise Exception('unexpected target path ' + target)
@@ -96,7 +96,7 @@ def process_item(item):
     else:
         # logging.debug(guid, item['media_language'], 'would be created on media')
 
-        filename = f'{guid}-{item['media_language']}.vtt' # e.g. '60936beb-b15d-44ec-a9ca-9dc0807fd889-deu.vtt'
+        filename = f'{guid}-{item["media_language"]}.vtt' # e.g. '60936beb-b15d-44ec-a9ca-9dc0807fd889-deu.vtt'
 
         # create placeholder recording with the current state
         r = upsert_recording(guid, {
